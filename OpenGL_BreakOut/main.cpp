@@ -10,12 +10,11 @@
 #include <glad/glad.h>; // 包含glad来获取所有的必须OpenGL头文件
 #include <GLFW/glfw3.h>
 #include "game.h"
-#include "resource_manager.h"
 
 #include <iostream>
+#include "shader.h"
+#include <glm/glm.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 
 // GLFW function declerations
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -70,12 +69,13 @@ int main(int argc, char* argv[])
 
     game.Init();
 
+
     // DeltaTime variables
     GLfloat deltaTime = 0.0f;
     GLfloat lastFrame = 0.0f;
 
     // Start Game within Menu State
-    game.State = GAME_ACTIVE;
+    game.State = GameState::GAME_ACTIVE;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -101,7 +101,6 @@ int main(int argc, char* argv[])
     }
 
     // Delete all resources as loaded using the resource manager
-    ResourceManager::Clear();
 
     glfwTerminate();
     return 0;
