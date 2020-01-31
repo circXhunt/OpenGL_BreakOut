@@ -13,7 +13,7 @@
 #include "triangle_renderer.h"
 
 SpriteRenderer* Renderer;
-Texture2D *texture;
+Texture2D* texture;
 
 TriangleRenderer* tRenderer;
 
@@ -22,28 +22,28 @@ GLenum glCheckError_(const char* file, int line);
 
 GLenum glCheckError_(const char* file, int line)
 {
-    GLenum errorCode;
-    while ((errorCode = glGetError()) != GL_NO_ERROR)
-    {
-        std::string error;
-        switch (errorCode)
-        {
-        case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;
-        case GL_INVALID_VALUE:                 error = "INVALID_VALUE"; break;
-        case GL_INVALID_OPERATION:             error = "INVALID_OPERATION"; break;
-        case GL_STACK_OVERFLOW:                error = "STACK_OVERFLOW"; break;
-        case GL_STACK_UNDERFLOW:               error = "STACK_UNDERFLOW"; break;
-        case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
-        case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
-        }
-        std::cout << error << " | " << file << " (" << line << ")" << std::endl;
-    }
-    return errorCode;
+	GLenum errorCode;
+	while ((errorCode = glGetError()) != GL_NO_ERROR)
+	{
+		std::string error;
+		switch (errorCode)
+		{
+		case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;
+		case GL_INVALID_VALUE:                 error = "INVALID_VALUE"; break;
+		case GL_INVALID_OPERATION:             error = "INVALID_OPERATION"; break;
+		case GL_STACK_OVERFLOW:                error = "STACK_OVERFLOW"; break;
+		case GL_STACK_UNDERFLOW:               error = "STACK_UNDERFLOW"; break;
+		case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
+		case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
+		}
+		std::cout << error << " | " << file << " (" << line << ")" << std::endl;
+	}
+	return errorCode;
 }
 #define glCheckError() glCheckError_(__FILE__, __LINE__) 
 
 Game::Game(GLuint width, GLuint height)
-    : State(GameState::GAME_ACTIVE), Keys(), Width(width), Height(height)
+	: State(GameState::GAME_ACTIVE), Keys(), Width(width), Height(height)
 {
 
 }
@@ -55,22 +55,22 @@ Game::~Game()
 
 void Game::Init()
 {
- //   Shader shader("resources/shaders/sprite.vs", "resources/shaders/sprite.fs");
- //   glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(this->Width),
- //       static_cast<GLfloat>(this->Height), 0.0f, -1.0f, 1.0f);
- //   shader.use();
- //   shader.setInt("image", 0);
- //   shader.setMat4("projection", projection);
- //   Renderer = new SpriteRenderer(shader);
-	//texture = new Texture2D();
- //   LoadTexture(texture, "resources/textures/awesomeface.png");
+	Shader shader("resources/shaders/sprite.vs", "resources/shaders/sprite.fs");
+	glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(this->Width),
+		static_cast<GLfloat>(this->Height), 0.0f, -1.0f, 1.0f);
+	shader.use();
+	shader.setInt("image", 0);
+	shader.setMat4("projection", projection);
+	Renderer = new SpriteRenderer(shader);
+	texture = new Texture2D();
+	LoadTexture(texture, "resources/textures/awesomeface.png");
 
-    Shader shader("resources/shaders/triangle.vs", "resources/shaders/triangle.fs");
-    glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(this->Width),
-        static_cast<GLfloat>(this->Height), 0.0f, -1.0f, 1.0f);
-    shader.use();
-    shader.setMat4("projection", projection);
-    tRenderer = new TriangleRenderer(shader);
+	//Shader shader("resources/shaders/triangle.vs", "resources/shaders/triangle.fs");
+	//glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(this->Width),
+	//    static_cast<GLfloat>(this->Height), 0.0f, -1.0f, 1.0f);
+	//shader.use();
+	//shader.setMat4("projection", projection);
+	//tRenderer = new TriangleRenderer(shader);
 }
 
 void Game::Update(GLfloat dt)
@@ -86,11 +86,12 @@ void Game::ProcessInput(GLfloat dt)
 
 void Game::Render()
 {
-    tRenderer->Draw(glm::vec3(0));
-    glCheckError();
+	Renderer->DrawSprite(*texture,
+		glm::vec2(200, 200), glm::vec2(300, 400), 45.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+	glCheckError();
 }
 
-void LoadTexture(Texture2D *texture, const GLchar* file) {
+void LoadTexture(Texture2D* texture, const GLchar* file) {
 
 
 	texture->Internal_Format = GL_RGBA;
