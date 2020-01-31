@@ -10,9 +10,12 @@
 #include "sprite_renderer.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "triangle_renderer.h"
 
 SpriteRenderer* Renderer;
 Texture2D *texture;
+
+TriangleRenderer* tRenderer;
 
 void LoadTexture(Texture2D* texture, const GLchar* file);
 GLenum glCheckError_(const char* file, int line);
@@ -52,15 +55,22 @@ Game::~Game()
 
 void Game::Init()
 {
-    Shader shader("resources/shaders/sprite.vs", "resources/shaders/sprite.fs");
+ //   Shader shader("resources/shaders/sprite.vs", "resources/shaders/sprite.fs");
+ //   glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(this->Width),
+ //       static_cast<GLfloat>(this->Height), 0.0f, -1.0f, 1.0f);
+ //   shader.use();
+ //   shader.setInt("image", 0);
+ //   shader.setMat4("projection", projection);
+ //   Renderer = new SpriteRenderer(shader);
+	//texture = new Texture2D();
+ //   LoadTexture(texture, "resources/textures/awesomeface.png");
+
+    Shader shader("resources/shaders/triangle.vs", "resources/shaders/triangle.fs");
     glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(this->Width),
         static_cast<GLfloat>(this->Height), 0.0f, -1.0f, 1.0f);
     shader.use();
-    shader.setInt("image", 0);
     shader.setMat4("projection", projection);
-    Renderer = new SpriteRenderer(shader);
-	texture = new Texture2D();
-    LoadTexture(texture, "resources/textures/awesomeface.png");
+    tRenderer = new TriangleRenderer(shader);
 }
 
 void Game::Update(GLfloat dt)
@@ -76,8 +86,7 @@ void Game::ProcessInput(GLfloat dt)
 
 void Game::Render()
 {
-    Renderer->DrawSprite(*texture,
-        glm::vec2(200, 200), glm::vec2(300, 400), 45.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+    tRenderer->Draw(glm::vec3(0));
     glCheckError();
 }
 
