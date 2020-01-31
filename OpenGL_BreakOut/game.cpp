@@ -8,16 +8,13 @@
 ******************************************************************/
 #include "game.h"
 #include "sprite_renderer.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+
 #include "triangle_renderer.h"
+#include "resource_manager.h"
 
 SpriteRenderer* Renderer;
-Texture2D* texture;
 
 TriangleRenderer* tRenderer;
-
-void LoadTexture(Texture2D* texture, const GLchar* file);
 GLenum glCheckError_(const char* file, int line);
 
 GLenum glCheckError_(const char* file, int line)
@@ -55,15 +52,15 @@ Game::~Game()
 
 void Game::Init()
 {
-	Shader shader("resources/shaders/sprite.vs", "resources/shaders/sprite.fs");
+	auto shader = ResourceManager::LoadShader("resources/shaders/sprite.vs", "resources/shaders/sprite.fs", "sprite");
 	glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(this->Width),
 		static_cast<GLfloat>(this->Height), 0.0f, -1.0f, 1.0f);
 	shader.use();
+
 	shader.setInt("image", 0);
 	shader.setMat4("projection", projection);
 	Renderer = new SpriteRenderer(shader);
-	texture = new Texture2D();
-	LoadTexture(texture, "resources/textures/awesomeface.png");
+	ResourceManager::LoadTexture("resources/textures/awesomeface.png", true, "texture");
 
 	//Shader shader("resources/shaders/triangle.vs", "resources/shaders/triangle.fs");
 	//glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(this->Width),
@@ -86,27 +83,11 @@ void Game::ProcessInput(GLfloat dt)
 
 void Game::Render()
 {
-	Renderer->DrawSprite(*texture,
+	auto texture = ResourceManager::GetTexture("texture");
+
+	Renderer->DrawSprite(texture,
 		glm::vec2(200, 200), glm::vec2(300, 400), 45.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 	glCheckError();
 }
 
-void LoadTexture(Texture2D* texture, const GLchar* file) {
 
-
-	texture->Internal_Format = GL_RGBA;
-	texture->Image_Format = GL_RGBA;
-	int width, height, nrComponents;
-	unsigned char* data = stbi_load(file, &width, &height, &nrComponents, 0);
-	if (data)
-	{
-		texture->Generate(width, height, data);
-		stbi_image_free(data);
-	}
-	else
-	{
-		std::cout << "Texture failed to load at path: " << file << std::endl;
-		stbi_image_free(data);
-	}
-
-}

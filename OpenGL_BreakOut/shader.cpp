@@ -61,6 +61,11 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 
 Shader::Shader(const GLchar* vertexPath, const GLchar* geometryPath, const GLchar* fragmentPath)
 {
+	if (geometryPath == "")
+	{
+		Shader(vertexPath, fragmentPath);
+		return;
+	}
 	// 1. retrieve the vertex/fragment source code from filePath
 	std::string vertexCode;
 	std::string geometryCode;
