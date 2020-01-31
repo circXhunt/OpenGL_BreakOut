@@ -7,7 +7,7 @@
 class GameLevel
 {
 public:
-	GameLevel();
+    GameLevel():Bricks() {}
 
 	std::vector<GameObject> Bricks;
 

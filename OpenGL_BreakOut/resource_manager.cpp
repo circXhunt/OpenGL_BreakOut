@@ -47,8 +47,11 @@ void ResourceManager::Clear()
 Texture2D ResourceManager::loadTextureFromFile(const GLchar* file, GLboolean alpha)
 {
 	Texture2D texture;
-	texture.Internal_Format = GL_RGBA;
-	texture.Image_Format = GL_RGBA;
+	if (alpha)
+	{
+		texture.Internal_Format = GL_RGBA;
+		texture.Image_Format = GL_RGBA;
+	}
 	int width, height, nrComponents;
 	unsigned char* data = stbi_load(file, &width, &height, &nrComponents, 0);
 	if (data)

@@ -40,7 +40,7 @@ void SpriteRenderer::initRenderData()
     glBindVertexArray(0);
 }
 
-void SpriteRenderer::DrawSprite(Texture2D& texture, glm::vec2 position,
+void SpriteRenderer::DrawSprite(const Texture2D& texture, glm::vec2 position,
     glm::vec2 size, GLfloat rotate, glm::vec3 color)
 {
     // ×¼±¸±ä»»
