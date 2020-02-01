@@ -12,9 +12,11 @@
 #include "triangle_renderer.h"
 #include "resource_manager.h"
 #include <GLFW\glfw3.h>
+#include "ball_object.h"
 
 SpriteRenderer* Renderer;
 GameObject* Player;
+BallObject* Ball;
 
 GLenum glCheckError_(const char* file, int line);
 
@@ -78,6 +80,8 @@ void Game::Init()
 		this->Height - PLAYER_SIZE.y
 	);
 	Player = new GameObject(playerPos, PLAYER_SIZE, ResourceManager::GetTexture("paddle"));
+	glm::vec2 ballPos = playerPos + glm::vec2(PLAYER_SIZE.x / 2 - BALL_RADIUS, -BALL_RADIUS * 2);
+	Ball = new BallObject(ballPos, BALL_RADIUS, INITIAL_BALL_VELOCITY, ResourceManager::GetTexture("face"));
 	/*
 	GameLevel two; two.Load("levels/two.lvl", this->Width, this->Height * 0.5);
 	GameLevel three; three.Load("levels/three.lvl", this->Width, this->Height * 0.5);
@@ -91,7 +95,7 @@ void Game::Init()
 
 void Game::Update(GLfloat dt)
 {
-
+	Ball->Move(dt, this->Width);
 }
 
 
@@ -103,15 +107,22 @@ void Game::ProcessInput(GLfloat dt)
 		// 移动挡板
 		if (this->Keys[GLFW_KEY_A])
 		{
-			if (Player->Position.x >= 0)
+			if (Player->Position.x >= 0) {
 				Player->Position.x -= velocity;
+				if (Ball->Stuck)
+					Ball->Position.x -= velocity;
+			}
 		}
 		if (this->Keys[GLFW_KEY_D])
 		{
-			if (Player->Position.x <= this->Width - Player->Size.x)
+			if (Player->Position.x <= this->Width - Player->Size.x) {
 				Player->Position.x += velocity;
+				if (Ball->Stuck)
+					Ball->Position.x += velocity;
+			}
 		}
-
+		if (this->Keys[GLFW_KEY_SPACE])
+			Ball->Stuck = false;
 
 	}
 }
@@ -128,12 +139,16 @@ void Game::Render()
 			glm::vec2(0, 0), glm::vec2(this->Width, this->Height), 0.0f
 		);
 
+		// 绘制关卡
+		this->Levels[this->Level].Draw(*Renderer);
+
 		// 绘制玩家
 		Player->Draw(*Renderer);
 
-		// 绘制关卡
-		this->Levels[this->Level].Draw(*Renderer);
-		
+		// 绘制球
+		Ball->Draw(*Renderer);
+
+
 	}
 	glCheckError();
 }
