@@ -14,10 +14,12 @@
 #include <GLFW\glfw3.h>
 #include "ball_object.h"
 #include "Collision.h"
+#include "particle_generator.h"
 
 SpriteRenderer* Renderer;
 GameObject* Player;
 BallObject* Ball;
+ParticleGenerator* Particles;
 
 GLenum glCheckError_(const char* file, int line);
 
@@ -71,6 +73,7 @@ void Game::Init()
 	ResourceManager::LoadTexture("resources/textures/block.png", GL_FALSE, "block");
 	ResourceManager::LoadTexture("resources/textures/block_solid.png", GL_FALSE, "block_solid");
 	ResourceManager::LoadTexture("resources/textures/paddle.png", true, "paddle");
+
 	// 加载关卡
 	GameLevel one;
 	one.Load("resources/levels/one.lvl", this->Width, this->Height * 0.5);
@@ -83,6 +86,18 @@ void Game::Init()
 	Player = new GameObject(playerPos, PLAYER_SIZE, ResourceManager::GetTexture("paddle"));
 	glm::vec2 ballPos = playerPos + glm::vec2(PLAYER_SIZE.x / 2 - BALL_RADIUS, -BALL_RADIUS * 2);
 	Ball = new BallObject(ballPos, BALL_RADIUS, INITIAL_BALL_VELOCITY, ResourceManager::GetTexture("face"));
+
+	ResourceManager::LoadShader("resources/shaders/particle.vs", "resources/shaders/particle.fs", "particle");
+	ResourceManager::LoadTexture("resources/textures/particle.png", GL_TRUE, "particle");
+	ResourceManager::GetShader("particle").use();
+	ResourceManager::GetShader("particle").setInt("sprite", 0);
+	ResourceManager::GetShader("particle").setMat4("projection", projection);
+	Particles = new ParticleGenerator(
+		ResourceManager::GetShader("particle"),
+		ResourceManager::GetTexture("particle"),
+		500
+	);
+
 	/*
 	GameLevel two; two.Load("levels/two.lvl", this->Width, this->Height * 0.5);
 	GameLevel three; three.Load("levels/three.lvl", this->Width, this->Height * 0.5);
@@ -98,6 +113,7 @@ void Game::Update(GLfloat dt)
 {
 	Ball->Move(dt, this->Width);
 	DoCollisions();
+	Particles->Update(dt, *Ball, 2, glm::vec2(Ball->Radius / 2));
 	if (Ball->Position.y >= this->Height) // 球是否接触底部边界？
 	{
 		this->ResetLevel();
@@ -151,7 +167,8 @@ void Game::Render()
 
 		// 绘制玩家
 		Player->Draw(*Renderer);
-
+		// Draw particles   
+		Particles->Draw();
 		// 绘制球
 		Ball->Draw(*Renderer);
 
