@@ -13,6 +13,7 @@
 #include "resource_manager.h"
 #include <GLFW\glfw3.h>
 #include "ball_object.h"
+#include "Collision.h"
 
 SpriteRenderer* Renderer;
 GameObject* Player;
@@ -96,6 +97,12 @@ void Game::Init()
 void Game::Update(GLfloat dt)
 {
 	Ball->Move(dt, this->Width);
+	DoCollisions();
+	if (Ball->Position.y >= this->Height) // 球是否接触底部边界？
+	{
+		this->ResetLevel();
+		this->ResetPlayer();
+	}
 }
 
 
@@ -153,4 +160,72 @@ void Game::Render()
 	glCheckError();
 }
 
+void Game::DoCollisions()
+{
+	for (GameObject& box : this->Levels[this->Level].Bricks)
+	{
+		if (!box.Destroyed)
+		{
+			auto result = Collision::CheckCollision(*Ball, box);
+			if (std::get<0>(result))
+			{
+				if (!box.IsSolid)
+					box.Destroyed = GL_TRUE;
+				Direction dir = std::get<1>(result);
+				glm::vec2 diff_vector = std::get<2>(result);
+				if (dir == LEFT || dir == RIGHT)
+				{
+					Ball->Velocity.x = -Ball->Velocity.x; // 反转水平速度
+					// 重定位
+					GLfloat penetration = Ball->Radius - std::abs(diff_vector.x);
+					if (dir == LEFT)
+						Ball->Position.x += penetration; // 将球右移
+					else
+						Ball->Position.x -= penetration; // 将球左移
+				}
+				else // 垂直方向碰撞
+				{
+					Ball->Velocity.y = -Ball->Velocity.y; // 反转垂直速度
+					// 重定位
+					GLfloat penetration = Ball->Radius - std::abs(diff_vector.y);
+					if (dir == UP)
+						Ball->Position.y -= penetration; // 将球上移
+					else
+						Ball->Position.y += penetration; // 将球下移
+				}
+			}
+		}
+	}
+	auto result = Collision::CheckCollision(*Ball, *Player);
+	if (!Ball->Stuck && std::get<0>(result))
+	{
+		// 检查碰到了挡板的哪个位置，并根据碰到哪个位置来改变速度
+		GLfloat centerBoard = Player->Position.x + Player->Size.x / 2;
+		GLfloat distance = (Ball->Position.x + Ball->Radius) - centerBoard;
+		GLfloat percentage = distance / (Player->Size.x / 2);
+		// 依据结果移动
+		GLfloat strength = 2.0f;
+		glm::vec2 oldVelocity = Ball->Velocity;
+		Ball->Velocity.x = INITIAL_BALL_VELOCITY.x * percentage * strength;
+		Ball->Velocity.y = -1 * abs(Ball->Velocity.y);
+		Ball->Velocity = glm::normalize(Ball->Velocity) * glm::length(oldVelocity);
+	}
+}
 
+
+void Game::ResetLevel() {
+	if (this->Level == 0)
+		this->Levels[0].Load("resources/levels/one.lvl", this->Width, this->Height * 0.5f);
+	else if (this->Level == 1)
+		this->Levels[1].Load("resources/levels/two.lvl", this->Width, this->Height * 0.5f);
+	else if (this->Level == 2)
+		this->Levels[2].Load("resources/levels/three.lvl", this->Width, this->Height * 0.5f);
+	else if (this->Level == 3)
+		this->Levels[3].Load("resources/levels/four.lvl", this->Width, this->Height * 0.5f);
+}
+
+void Game::ResetPlayer() {
+	Player->Size = PLAYER_SIZE;
+	Player->Position = glm::vec2(this->Width / 2 - PLAYER_SIZE.x / 2, this->Height - PLAYER_SIZE.y);
+	Ball->Reset(Player->Position + glm::vec2(PLAYER_SIZE.x / 2 - BALL_RADIUS, -(BALL_RADIUS * 2)), INITIAL_BALL_VELOCITY);
+}
