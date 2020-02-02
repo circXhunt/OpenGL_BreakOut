@@ -11,6 +11,7 @@
 #include <glad/glad.h>; // 包含glad来获取所有的必须OpenGL头文件
 #include <vector>
 #include "game_level.h"
+#include "power_up.h"
 
 
 // Represents the current state of the game
@@ -41,7 +42,7 @@ public:
     GLuint                 Width, Height;
     std::vector<GameLevel> Levels;
     GLuint                 Level;
-
+    std::vector<PowerUp>  PowerUps;
 
     // Constructor/Destructor
     Game(GLuint width, GLuint height);
@@ -55,6 +56,8 @@ public:
     void DoCollisions();
     void ResetLevel();
     void ResetPlayer();
+    void SpawnPowerUps(GameObject& block);
+    void UpdatePowerUps(GLfloat dt);
 };
 
 #endif

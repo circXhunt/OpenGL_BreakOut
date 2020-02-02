@@ -1,5 +1,4 @@
 #include "post_processor.h"
-#include "debugger.h"
 
 
 PostProcessor::PostProcessor(Shader shader, GLuint width, GLuint height)
