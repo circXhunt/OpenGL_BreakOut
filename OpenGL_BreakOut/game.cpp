@@ -18,7 +18,10 @@
 #include "post_processor.h"
 #include <algorithm>
 #include "debugger.h"
+#include "irrKlang/irrKlang.h"
+using namespace irrklang;
 
+ISoundEngine* SoundEngine = createIrrKlangDevice();
 SpriteRenderer* Renderer;
 GameObject* Player;
 BallObject* Ball;
@@ -48,7 +51,7 @@ Game::~Game()
 
 void Game::Init()
 {
-
+	SoundEngine->play2D("resources/audio/breakout.mp3", GL_TRUE);
 	// 加载着色器
 	ResourceManager::LoadShader("resources/shaders/sprite.vs", "resources/shaders/sprite.fs", "sprite");
 	ResourceManager::LoadShader("resources/shaders/particle.vs", "resources/shaders/particle.fs", "particle");
@@ -221,11 +224,13 @@ void Game::DoCollisions()
 
 					box.Destroyed = GL_TRUE;
 					this->SpawnPowerUps(box);
+					SoundEngine->play2D("resources/audio/bleep.mp3", GL_FALSE);
 				}
 				else
 				{   // 如果是实心的砖块则激活shake特效
 					ShakeTime = 0.05f;
 					Effects->Shake = true;
+					SoundEngine->play2D("resources/audio/solid.wav", GL_FALSE);
 				}
 				Direction dir = std::get<1>(result);
 				glm::vec2 diff_vector = std::get<2>(result);
@@ -258,6 +263,7 @@ void Game::DoCollisions()
 	auto result = Collision::CheckCollision(*Ball, *Player);
 	if (!Ball->Stuck && std::get<0>(result))
 	{
+		SoundEngine->play2D("resources/audio/bleep.wav", GL_FALSE);
 		// 检查碰到了挡板的哪个位置，并根据碰到哪个位置来改变速度
 		GLfloat centerBoard = Player->Position.x + Player->Size.x / 2;
 		GLfloat distance = (Ball->Position.x + Ball->Radius) - centerBoard;
@@ -282,6 +288,7 @@ void Game::DoCollisions()
 			if (Collision::CheckCollision(*Player, powerUp))
 			{   // 道具与挡板接触，激活它！
 				ActivatePowerUp(powerUp);
+				SoundEngine->play2D("resources/audio/powerup.wav", GL_FALSE);
 				powerUp.Destroyed = GL_TRUE;
 				powerUp.Activated = GL_TRUE;
 			}
