@@ -15,35 +15,15 @@
 #include "ball_object.h"
 #include "Collision.h"
 #include "particle_generator.h"
+#include "post_processor.h"
 
 SpriteRenderer* Renderer;
 GameObject* Player;
 BallObject* Ball;
 ParticleGenerator* Particles;
+PostProcessor* Effects;
 
-GLenum glCheckError_(const char* file, int line);
-
-GLenum glCheckError_(const char* file, int line)
-{
-	GLenum errorCode;
-	while ((errorCode = glGetError()) != GL_NO_ERROR)
-	{
-		std::string error;
-		switch (errorCode)
-		{
-		case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;
-		case GL_INVALID_VALUE:                 error = "INVALID_VALUE"; break;
-		case GL_INVALID_OPERATION:             error = "INVALID_OPERATION"; break;
-		case GL_STACK_OVERFLOW:                error = "STACK_OVERFLOW"; break;
-		case GL_STACK_UNDERFLOW:               error = "STACK_UNDERFLOW"; break;
-		case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
-		case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
-		}
-		std::cout << error << " | " << file << " (" << line << ")" << std::endl;
-	}
-	return errorCode;
-}
-#define glCheckError() glCheckError_(__FILE__, __LINE__) 
+GLfloat ShakeTime = 0.0f;
 
 Game::Game(GLuint width, GLuint height)
 	:Level(0), State(GameState::GAME_ACTIVE), Keys(), Width(width), Height(height)
@@ -55,49 +35,44 @@ Game::~Game()
 {
 	delete Renderer;
 	delete Player;
+	delete Ball;
+	delete Particles;
+	delete Effects;
 }
 
 void Game::Init()
 {
-	auto shader = ResourceManager::LoadShader("resources/shaders/sprite.vs", "resources/shaders/sprite.fs", "sprite");
+
+	// 加载着色器
+	ResourceManager::LoadShader("resources/shaders/sprite.vs", "resources/shaders/sprite.fs", "sprite");
+	ResourceManager::LoadShader("resources/shaders/particle.vs", "resources/shaders/particle.fs", "particle");
+	ResourceManager::LoadShader("resources/shaders/effect.vs", "resources/shaders/effect.fs", "effect");
+
+	// 配置着色器
 	glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(this->Width),
 		static_cast<GLfloat>(this->Height), 0.0f, -1.0f, 1.0f);
-	shader.use();
 
-	shader.setInt("image", 0);
-	shader.setMat4("projection", projection);
-	Renderer = new SpriteRenderer(shader);
+	ResourceManager::GetShader("sprite").use();
+	ResourceManager::GetShader("sprite").setInt("image", 0);
+	ResourceManager::GetShader("sprite").setMat4("projection", projection);
+
+	ResourceManager::GetShader("particle").use();
+	ResourceManager::GetShader("particle").setInt("sprite", 0);
+	ResourceManager::GetShader("particle").setMat4("projection", projection);
+
+
 	// 加载纹理
 	ResourceManager::LoadTexture("resources/textures/background.jpg", GL_FALSE, "background");
 	ResourceManager::LoadTexture("resources/textures/awesomeface.png", GL_TRUE, "face");
 	ResourceManager::LoadTexture("resources/textures/block.png", GL_FALSE, "block");
 	ResourceManager::LoadTexture("resources/textures/block_solid.png", GL_FALSE, "block_solid");
 	ResourceManager::LoadTexture("resources/textures/paddle.png", true, "paddle");
+	ResourceManager::LoadTexture("resources/textures/particle.png", GL_TRUE, "particle");
 
 	// 加载关卡
 	GameLevel one;
 	one.Load("resources/levels/one.lvl", this->Width, this->Height * 0.5);
 	this->Levels.push_back(one);
-
-	glm::vec2 playerPos = glm::vec2(
-		this->Width / 2 - PLAYER_SIZE.x / 2,
-		this->Height - PLAYER_SIZE.y
-	);
-	Player = new GameObject(playerPos, PLAYER_SIZE, ResourceManager::GetTexture("paddle"));
-	glm::vec2 ballPos = playerPos + glm::vec2(PLAYER_SIZE.x / 2 - BALL_RADIUS, -BALL_RADIUS * 2);
-	Ball = new BallObject(ballPos, BALL_RADIUS, INITIAL_BALL_VELOCITY, ResourceManager::GetTexture("face"));
-
-	ResourceManager::LoadShader("resources/shaders/particle.vs", "resources/shaders/particle.fs", "particle");
-	ResourceManager::LoadTexture("resources/textures/particle.png", GL_TRUE, "particle");
-	ResourceManager::GetShader("particle").use();
-	ResourceManager::GetShader("particle").setInt("sprite", 0);
-	ResourceManager::GetShader("particle").setMat4("projection", projection);
-	Particles = new ParticleGenerator(
-		ResourceManager::GetShader("particle"),
-		ResourceManager::GetTexture("particle"),
-		500
-	);
-
 	/*
 	GameLevel two; two.Load("levels/two.lvl", this->Width, this->Height * 0.5);
 	GameLevel three; three.Load("levels/three.lvl", this->Width, this->Height * 0.5);
@@ -107,6 +82,31 @@ void Game::Init()
 	this->Levels.push_back(four);
 	*/
 	this->Level = 0;
+
+	// 加载玩家
+	glm::vec2 playerPos = glm::vec2(
+		this->Width / 2 - PLAYER_SIZE.x / 2,
+		this->Height - PLAYER_SIZE.y
+	);
+	Player = new GameObject(playerPos, PLAYER_SIZE, ResourceManager::GetTexture("paddle"));
+
+	// 加载球
+	glm::vec2 ballPos = playerPos + glm::vec2(PLAYER_SIZE.x / 2 - BALL_RADIUS, -BALL_RADIUS * 2);
+	Ball = new BallObject(ballPos, BALL_RADIUS, INITIAL_BALL_VELOCITY, ResourceManager::GetTexture("face"));
+
+	// 渲染器
+	Renderer = new SpriteRenderer(ResourceManager::GetShader("sprite"));
+
+	//粒子
+	Particles = new ParticleGenerator(
+		ResourceManager::GetShader("particle"),
+		ResourceManager::GetTexture("particle"),
+		500
+	);
+
+	// 后处理特效
+	Effects = new PostProcessor(ResourceManager::GetShader("effect"), this->Width, this->Height);
+
 }
 
 void Game::Update(GLfloat dt)
@@ -118,6 +118,12 @@ void Game::Update(GLfloat dt)
 	{
 		this->ResetLevel();
 		this->ResetPlayer();
+	}
+	if (ShakeTime > 0.0f)
+	{
+		ShakeTime -= dt;
+		if (ShakeTime <= 0.0f)
+			Effects->Shake = false;
 	}
 }
 
@@ -152,10 +158,12 @@ void Game::ProcessInput(GLfloat dt)
 
 void Game::Render()
 {
+
 	if (this->State == GameState::GAME_ACTIVE)
 	{
 		// 需要手动调整绘制顺序
 
+		Effects->BeginRender();
 
 		// 绘制背景
 		Renderer->DrawSprite(ResourceManager::GetTexture("background"),
@@ -171,10 +179,11 @@ void Game::Render()
 		Particles->Draw();
 		// 绘制球
 		Ball->Draw(*Renderer);
+		Effects->EndRender();
 
-
+		Effects->Render(glfwGetTime());
 	}
-	glCheckError();
+
 }
 
 void Game::DoCollisions()
@@ -188,6 +197,11 @@ void Game::DoCollisions()
 			{
 				if (!box.IsSolid)
 					box.Destroyed = GL_TRUE;
+				else
+				{   // 如果是实心的砖块则激活shake特效
+					ShakeTime = 0.05f;
+					Effects->Shake = true;
+				}
 				Direction dir = std::get<1>(result);
 				glm::vec2 diff_vector = std::get<2>(result);
 				if (dir == LEFT || dir == RIGHT)
