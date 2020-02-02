@@ -19,6 +19,7 @@
 #include <algorithm>
 #include "debugger.h"
 #include "irrKlang/irrKlang.h"
+#include "texture_renderer.h"
 using namespace irrklang;
 
 ISoundEngine* SoundEngine = createIrrKlangDevice();
@@ -27,6 +28,7 @@ GameObject* Player;
 BallObject* Ball;
 ParticleGenerator* Particles;
 PostProcessor* Effects;
+TextRenderer* Text;
 
 GLfloat ShakeTime = 0.0f;
 
@@ -35,7 +37,7 @@ GLboolean isOtherPowerUpActive(std::vector<PowerUp>& powerUps, std::string type)
 
 
 Game::Game(GLuint width, GLuint height)
-	:Level(0), State(GameState::GAME_ACTIVE), Keys(), Width(width), Height(height)
+	:Level(0), State(GameState::GAME_MENU), Keys(), Width(width), Height(height), Lives(3)
 {
 
 }
@@ -51,7 +53,12 @@ Game::~Game()
 
 void Game::Init()
 {
+	// Text
+	Text = new TextRenderer(this->Width, this->Height);
+	Text->Load("resources/fonts/ocraext.TTF", 24);
+	// BGM
 	SoundEngine->play2D("resources/audio/breakout.mp3", GL_TRUE);
+
 	// 加载着色器
 	ResourceManager::LoadShader("resources/shaders/sprite.vs", "resources/shaders/sprite.fs", "sprite");
 	ResourceManager::LoadShader("resources/shaders/particle.vs", "resources/shaders/particle.fs", "particle");
@@ -84,17 +91,15 @@ void Game::Init()
 	ResourceManager::LoadTexture("resources/textures/powerup_chaos.png", GL_TRUE, "tex_chaos");
 
 	// 加载关卡
-	GameLevel one;
-	one.Load("resources/levels/one.lvl", this->Width, this->Height * 0.5);
+	GameLevel one; one.Load("resources/levels/one.lvl", this->Width, this->Height * 0.5);
+	GameLevel two; two.Load("resources/levels/two.lvl", this->Width, this->Height * 0.5);
+	GameLevel three; three.Load("resources/levels/three.lvl", this->Width, this->Height * 0.5);
+	GameLevel four; four.Load("resources/levels/four.lvl", this->Width, this->Height * 0.5);
 	this->Levels.push_back(one);
-	/*
-	GameLevel two; two.Load("levels/two.lvl", this->Width, this->Height * 0.5);
-	GameLevel three; three.Load("levels/three.lvl", this->Width, this->Height * 0.5);
-	GameLevel four; four.Load("levels/four.lvl", this->Width, this->Height * 0.5);
 	this->Levels.push_back(two);
 	this->Levels.push_back(three);
 	this->Levels.push_back(four);
-	*/
+
 	this->Level = 0;
 
 	// 加载玩家
@@ -124,26 +129,42 @@ void Game::Init()
 
 void Game::Update(GLfloat dt)
 {
-	Ball->Move(dt, this->Width);
-
-	DoCollisions();
-
-	Particles->Update(dt, *Ball, 2, glm::vec2(Ball->Radius / 2));
-
-	this->UpdatePowerUps(dt);
-
-	if (ShakeTime > 0.0f)
-	{
-		ShakeTime -= dt;
-		if (ShakeTime <= 0.0f)
-			Effects->Shake = false;
-	}
-
-	if (Ball->Position.y >= this->Height) // 球是否接触底部边界？
+	if (this->State == GameState::GAME_ACTIVE && this->Levels[this->Level].IsCompleted())
 	{
 		this->ResetLevel();
 		this->ResetPlayer();
+		Effects->Chaos = GL_TRUE;
+		this->State = GameState::GAME_WIN;
 	}
+	if (this->State == GameState::GAME_ACTIVE)
+	{
+		Ball->Move(dt, this->Width);
+
+		DoCollisions();
+
+		Particles->Update(dt, *Ball, 2, glm::vec2(Ball->Radius / 2));
+
+		this->UpdatePowerUps(dt);
+
+		if (ShakeTime > 0.0f)
+		{
+			ShakeTime -= dt;
+			if (ShakeTime <= 0.0f)
+				Effects->Shake = false;
+		}
+		if (Ball->Position.y >= this->Height) // 球是否接触到底部边界?
+		{
+			--this->Lives;
+			// 玩家是否已失去所有生命值? : 游戏结束
+			if (this->Lives == 0)
+			{
+				this->ResetLevel();
+				this->State = GameState::GAME_MENU;
+			}
+			this->ResetPlayer();
+		}
+	}
+
 }
 
 
@@ -173,12 +194,51 @@ void Game::ProcessInput(GLfloat dt)
 			Ball->Stuck = false;
 
 	}
+	if (this->State == GameState::GAME_MENU)
+	{
+		if (this->Keys[GLFW_KEY_ENTER] && !this->KeysProcessed[GLFW_KEY_ENTER])
+		{
+			this->State = GameState::GAME_ACTIVE;
+			this->KeysProcessed[GLFW_KEY_ENTER] = GL_TRUE;
+		}
+		if (this->Keys[GLFW_KEY_W] && !this->KeysProcessed[GLFW_KEY_W])
+		{
+			this->Level = (this->Level + 1) % 4;
+			this->KeysProcessed[GLFW_KEY_W] = GL_TRUE;
+		}
+		if (this->Keys[GLFW_KEY_S] && !this->KeysProcessed[GLFW_KEY_S])
+		{
+			if (this->Level > 0)
+				--this->Level;
+			else
+				this->Level = 3;
+			this->KeysProcessed[GLFW_KEY_S] = GL_TRUE;
+		}
+	}
+	if (this->State == GameState::GAME_WIN)
+	{
+		if (this->Keys[GLFW_KEY_ENTER])
+		{
+			this->KeysProcessed[GLFW_KEY_ENTER] = GL_TRUE;
+			Effects->Chaos = GL_FALSE;
+			this->State = GameState::GAME_MENU;
+		}
+	}
+	if (this->Keys[GLFW_KEY_X])
+	{
+		for (auto& b : Levels[Level].Bricks) {
+			if (!b.IsSolid)
+			{
+				b.Destroyed = GL_TRUE;
+			}
+		}
+	}
 }
 
 void Game::Render()
 {
 
-	if (this->State == GameState::GAME_ACTIVE)
+	if (this->State == GameState::GAME_ACTIVE || this->State == GameState::GAME_MENU)
 	{
 		// 需要手动调整绘制顺序
 
@@ -202,13 +262,35 @@ void Game::Render()
 
 		// 绘制玩家
 		Player->Draw(*Renderer);
+
 		// 绘制球
 		Ball->Draw(*Renderer);
+
+
+
 		Effects->EndRender();
 
 		Effects->Render(glfwGetTime());
+
+		// HUD
+		std::stringstream ss; ss << this->Lives;
+
+		Text->RenderText("Lives:" + ss.str(), 5.0f, 5.0f, 1.0f);
 	}
-	//glCheckError();
+	if (this->State == GameState::GAME_MENU)
+	{
+		Text->RenderText("Press ENTER to start", Width / 2 - 100.0f, Height / 2, 1.0f);
+		Text->RenderText("Press W or S to select level", Width / 2 - 130.0f, Height / 2 + 20.0f, 0.75f);
+	}
+	if (this->State == GameState::GAME_WIN)
+	{
+		Text->RenderText(
+			"You WON!!!", 320.0, Height / 2 - 20.0, 1.0, glm::vec3(0.0, 1.0, 0.0)
+		);
+		Text->RenderText(
+			"Press ENTER to retry or ESC to quit", 130.0, Height / 2, 1.0, glm::vec3(1.0, 1.0, 0.0)
+		);
+	}
 }
 
 void Game::DoCollisions()
@@ -306,6 +388,8 @@ void Game::ResetLevel() {
 		this->Levels[2].Load("resources/levels/three.lvl", this->Width, this->Height * 0.5f);
 	else if (this->Level == 3)
 		this->Levels[3].Load("resources/levels/four.lvl", this->Width, this->Height * 0.5f);
+
+	this->Lives = 3;
 }
 
 void Game::ResetPlayer() {

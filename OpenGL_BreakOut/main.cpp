@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
     GLfloat lastFrame = 0.0f;
 
     // Start Game within Menu State
-    game.State = GameState::GAME_ACTIVE;
+    game.State = GameState::GAME_MENU;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -121,6 +121,16 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             game.Keys[key] = GL_TRUE;
         else if (action == GLFW_RELEASE)
             game.Keys[key] = GL_FALSE;
+    }
+    if (key >= 0 && key < 1024)
+    {
+        if (action == GLFW_PRESS)
+            game.Keys[key] = GL_TRUE;
+        else if (action == GLFW_RELEASE)
+        {
+            game.Keys[key] = GL_FALSE;
+            game.KeysProcessed[key] = GL_FALSE;
+        }
     }
 }
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
