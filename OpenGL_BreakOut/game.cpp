@@ -20,6 +20,7 @@
 #include "debugger.h"
 #include "irrKlang/irrKlang.h"
 #include "texture_renderer.h"
+#include "physics.h"
 using namespace irrklang;
 
 ISoundEngine* SoundEngine = createIrrKlangDevice();
@@ -29,6 +30,7 @@ BallObject* Ball;
 ParticleGenerator* Particles;
 PostProcessor* Effects;
 TextRenderer* Text;
+Physics* Physics_;
 
 GLfloat ShakeTime = 0.0f;
 
@@ -54,6 +56,10 @@ Game::~Game()
 
 void Game::Init()
 {
+	// Physics
+	Physics_ = new Physics();
+	Physics_->Test();
+
 	// Text
 	Text = new TextRenderer(this->Width, this->Height);
 	Text->Load("resources/fonts/ocraext.TTF", 24);
@@ -79,7 +85,7 @@ void Game::Init()
 
 
 	// ¼ÓÔØÎÆÀí
-	ResourceManager::LoadTexture("resources/textures/background.jpg", GL_FALSE, "background");
+	ResourceManager::LoadTexture("resources/textures/cpdckppnlv.jpg", GL_FALSE, "background");
 	ResourceManager::LoadTexture("resources/textures/awesomeface.png", GL_TRUE, "face");
 	ResourceManager::LoadTexture("resources/textures/block.png", GL_FALSE, "block");
 	ResourceManager::LoadTexture("resources/textures/block_solid.png", GL_FALSE, "block_solid");
@@ -92,10 +98,10 @@ void Game::Init()
 	ResourceManager::LoadTexture("resources/textures/powerup_chaos.png", GL_TRUE, "tex_chaos");
 
 	// ¼ÓÔØ¹Ø¿¨
-	GameLevel one; one.Load("resources/levels/one.lvl", this->Width, this->Height * 0.5);
-	GameLevel two; two.Load("resources/levels/two.lvl", this->Width, this->Height * 0.5);
-	GameLevel three; three.Load("resources/levels/three.lvl", this->Width, this->Height * 0.5);
-	GameLevel four; four.Load("resources/levels/four.lvl", this->Width, this->Height * 0.5);
+	GameLevel one; one.Load("resources/levels/one.lvl", *Physics_, this->Width, this->Height * 0.5);
+	GameLevel two; two.Load("resources/levels/two.lvl", *Physics_, this->Width, this->Height * 0.5);
+	GameLevel three; three.Load("resources/levels/three.lvl", *Physics_, this->Width, this->Height * 0.5);
+	GameLevel four; four.Load("resources/levels/four.lvl", *Physics_, this->Width, this->Height * 0.5);
 	this->Levels.push_back(one);
 	this->Levels.push_back(two);
 	this->Levels.push_back(three);
@@ -109,10 +115,12 @@ void Game::Init()
 		this->Height - PLAYER_SIZE.y
 	);
 	Player = new GameObject(playerPos, PLAYER_SIZE, ResourceManager::GetTexture("paddle"));
+	Player->Collision = Physics_->CreatePlayerPhysics(*Player);
 
 	// ¼ÓÔØÇò
 	glm::vec2 ballPos = playerPos + glm::vec2(PLAYER_SIZE.x / 2 - BALL_RADIUS, -BALL_RADIUS * 2);
 	Ball = new BallObject(ballPos, BALL_RADIUS, INITIAL_BALL_VELOCITY, ResourceManager::GetTexture("face"));
+	Ball->Collision = Physics_->CreateBallPhysics(*Ball);
 
 	// äÖÈ¾Æ÷
 	Renderer = new SpriteRenderer(ResourceManager::GetShader("sprite"));
@@ -130,6 +138,8 @@ void Game::Init()
 
 void Game::Update(GLfloat dt)
 {
+	Physics_->Update(dt);
+
 	if (this->State == GameState::GAME_ACTIVE && this->Levels[this->Level].IsCompleted())
 	{
 		this->ResetLevel();
@@ -139,9 +149,16 @@ void Game::Update(GLfloat dt)
 	}
 	if (this->State == GameState::GAME_ACTIVE)
 	{
-		Ball->Move(dt, this->Width);
+		// object update
+		Ball->Update(dt);
+		for (auto& box : Levels[Level].Bricks) {
+			box.Update(dt);
+		}
+		Player->Update(dt);
 
-		DoCollisions();
+		Ball->Move(dt, this->Width);
+		//DoCollisions();
+		DoCollisionsBox2D();
 
 		Particles->Update(dt, *Ball, 2, glm::vec2(Ball->Radius / 2));
 
@@ -381,16 +398,19 @@ void Game::DoCollisions()
 	}
 }
 
+void Game::DoCollisionsBox2D() {
+
+}
 
 void Game::ResetLevel() {
 	if (this->Level == 0)
-		this->Levels[0].Load("resources/levels/one.lvl", this->Width, this->Height * 0.5f);
+		this->Levels[0].Load("resources/levels/one.lvl", *Physics_, this->Width, this->Height * 0.5f);
 	else if (this->Level == 1)
-		this->Levels[1].Load("resources/levels/two.lvl", this->Width, this->Height * 0.5f);
+		this->Levels[1].Load("resources/levels/two.lvl", *Physics_, this->Width, this->Height * 0.5f);
 	else if (this->Level == 2)
-		this->Levels[2].Load("resources/levels/three.lvl", this->Width, this->Height * 0.5f);
+		this->Levels[2].Load("resources/levels/three.lvl", *Physics_, this->Width, this->Height * 0.5f);
 	else if (this->Level == 3)
-		this->Levels[3].Load("resources/levels/four.lvl", this->Width, this->Height * 0.5f);
+		this->Levels[3].Load("resources/levels/four.lvl", *Physics_, this->Width, this->Height * 0.5f);
 
 	this->Lives = 3;
 }

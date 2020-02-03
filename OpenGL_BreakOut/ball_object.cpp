@@ -11,7 +11,10 @@ glm::vec2 BallObject::Move(GLfloat dt, GLuint window_width)
 {
 	if (!this->Stuck)
 	{
-		this->Position += this->Velocity * dt;
+		//auto movedPos = this->Position + this->Velocity * dt;
+		//this->Collision->SetLinearVelocity(this->Velocity.x, this->)
+		//this->Collision->SetTransform(b2Vec2(movedPos.x, movedPos.y) , 0);
+		//this->Position += this->Velocity * dt;
 		if (this->Position.x < 0.0f)
 		{
 			this->Velocity.x = -this->Velocity.x;

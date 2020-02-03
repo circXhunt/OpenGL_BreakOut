@@ -56,6 +56,7 @@ public:
     void Update(GLfloat dt);
     void Render();
     void DoCollisions();
+    void DoCollisionsBox2D();
     void ResetLevel();
     void ResetPlayer();
     void SpawnPowerUps(GameObject& block);

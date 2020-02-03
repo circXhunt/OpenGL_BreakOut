@@ -1,7 +1,6 @@
 #include "game_level.h"
-#include "resource_manager.h"
 
-void GameLevel::Load(const GLchar* file, GLuint levelWidth, GLuint levelHeight)
+void GameLevel::Load(const GLchar* file, Physics& physics, GLuint levelWidth, GLuint levelHeight)
 {
 	this->Bricks.clear();
 
@@ -23,67 +22,70 @@ void GameLevel::Load(const GLchar* file, GLuint levelWidth, GLuint levelHeight)
 			tileData.push_back(row);
 		}
 		if (tileData.size() > 0)
-			this->init(tileData, levelWidth, levelHeight);
+			this->init(tileData, physics, levelWidth, levelHeight);
 	}
 }
 
 void GameLevel::Draw(SpriteRenderer& renderer)
 {
-    for (GameObject& tile : this->Bricks)
-        if (!tile.Destroyed)
-            tile.Draw(renderer);
+	for (GameObject& tile : this->Bricks)
+		if (!tile.Destroyed)
+			tile.Draw(renderer);
 }
 
 GLboolean GameLevel::IsCompleted()
 {
-    for (GameObject& tile : this->Bricks)
-        if (!tile.IsSolid && !tile.Destroyed)
-            return GL_FALSE;
-    return GL_TRUE;
+	for (GameObject& tile : this->Bricks)
+		if (!tile.IsSolid && !tile.Destroyed)
+			return GL_FALSE;
+	return GL_TRUE;
 }
 
-void GameLevel::init(std::vector<std::vector<GLuint>> tileData, GLuint levelWidth, GLuint levelHeight)
+void GameLevel::init(std::vector<std::vector<GLuint>> tileData, Physics& physics, GLuint levelWidth, GLuint levelHeight)
 {
 	// 计算每个维度的大小
 	GLuint height = tileData.size();
 	GLuint width = tileData[0].size();
-    GLfloat unit_width = levelWidth / static_cast<GLfloat>(width);
-    GLfloat unit_height = levelHeight / height;
-    // 基于tileDataC初始化关卡     
-    for (GLuint y = 0; y < height; ++y)
-    {
-        for (GLuint x = 0; x < width; ++x)
-        {
-            // 检查砖块类型
-            if (tileData[y][x] == 1)
-            {
-                glm::vec2 pos(unit_width * x, unit_height * y);
-                glm::vec2 size(unit_width, unit_height);
-                GameObject obj(pos, size,
-                    ResourceManager::GetTexture("block_solid"),
-                    glm::vec3(0.8f, 0.8f, 0.7f)
-                );
-                obj.IsSolid = GL_TRUE;
-                this->Bricks.push_back(obj);
-            }
-            else if (tileData[y][x] > 1)
-            {
-                glm::vec3 color = glm::vec3(1.0f); // 默认为白色
-                if (tileData[y][x] == 2)
-                    color = glm::vec3(0.2f, 0.6f, 1.0f);
-                else if (tileData[y][x] == 3)
-                    color = glm::vec3(0.0f, 0.7f, 0.0f);
-                else if (tileData[y][x] == 4)
-                    color = glm::vec3(0.8f, 0.8f, 0.4f);
-                else if (tileData[y][x] == 5)
-                    color = glm::vec3(1.0f, 0.5f, 0.0f);
+	GLfloat unit_width = levelWidth / static_cast<GLfloat>(width);
+	GLfloat unit_height = levelHeight / height;
+	// 基于tileDataC初始化关卡     
+	for (GLuint y = 0; y < height; ++y)
+	{
+		for (GLuint x = 0; x < width; ++x)
+		{
+			// 检查砖块类型
+			if (tileData[y][x] == 1)
+			{
+				glm::vec2 pos(unit_width * x, unit_height * y);
+				glm::vec2 size(unit_width, unit_height);
+				GameObject obj(pos, size,
+					ResourceManager::GetTexture("block_solid"),
+					glm::vec3(0.8f, 0.8f, 0.7f)
+				);
+				obj.IsSolid = GL_TRUE;
+				obj.Collision = physics.CreateBoxPhysics(obj);
+				this->Bricks.push_back(obj);
+			}
+			else if (tileData[y][x] > 1)
+			{
+				glm::vec3 color = glm::vec3(1.0f); // 默认为白色
+				if (tileData[y][x] == 2)
+					color = glm::vec3(0.2f, 0.6f, 1.0f);
+				else if (tileData[y][x] == 3)
+					color = glm::vec3(0.0f, 0.7f, 0.0f);
+				else if (tileData[y][x] == 4)
+					color = glm::vec3(0.8f, 0.8f, 0.4f);
+				else if (tileData[y][x] == 5)
+					color = glm::vec3(1.0f, 0.5f, 0.0f);
 
-                glm::vec2 pos(unit_width * x, unit_height * y);
-                glm::vec2 size(unit_width, unit_height);
-                this->Bricks.push_back(
-                    GameObject(pos, size, ResourceManager::GetTexture("block"), color)
-                );
-            }
-        }
-    }
+				glm::vec2 pos(unit_width * x, unit_height * y);
+				glm::vec2 size(unit_width, unit_height);
+				auto box = GameObject(pos, size, ResourceManager::GetTexture("block"), color);
+				box.Collision = physics.CreateBoxPhysics(box);
+				this->Bricks.push_back(
+					box
+				);
+			}
+		}
+	}
 }

@@ -113,5 +113,8 @@
     <ClInclude Include="texture_renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="physics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
