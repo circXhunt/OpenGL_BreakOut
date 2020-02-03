@@ -34,10 +34,11 @@ GLfloat ShakeTime = 0.0f;
 
 void ActivatePowerUp(PowerUp& powerUp);
 GLboolean isOtherPowerUpActive(std::vector<PowerUp>& powerUps, std::string type);
+GLboolean ShouldSpawn(GLuint chance);
 
 
 Game::Game(GLuint width, GLuint height)
-	:Level(0), State(GameState::GAME_MENU), Keys(), Width(width), Height(height), Lives(3)
+	:Level(0), State(GameState::GAME_MENU), Keys(), KeysProcessed(), Width(width), Height(height), Lives(3)
 {
 
 }
@@ -193,6 +194,16 @@ void Game::ProcessInput(GLfloat dt)
 		if (this->Keys[GLFW_KEY_SPACE])
 			Ball->Stuck = false;
 
+		// Debug
+		if (this->Keys[GLFW_KEY_X] && !this->KeysProcessed[GLFW_KEY_X])
+		{
+			for (auto& b : Levels[Level].Bricks) {
+				if (!b.IsSolid)
+				{
+					b.Destroyed = GL_TRUE;
+				}
+			}
+		}
 	}
 	if (this->State == GameState::GAME_MENU)
 	{
@@ -224,21 +235,13 @@ void Game::ProcessInput(GLfloat dt)
 			this->State = GameState::GAME_MENU;
 		}
 	}
-	if (this->Keys[GLFW_KEY_X])
-	{
-		for (auto& b : Levels[Level].Bricks) {
-			if (!b.IsSolid)
-			{
-				b.Destroyed = GL_TRUE;
-			}
-		}
-	}
+
 }
 
 void Game::Render()
 {
 
-	if (this->State == GameState::GAME_ACTIVE || this->State == GameState::GAME_MENU)
+	if (this->State == GameState::GAME_ACTIVE || this->State == GameState::GAME_MENU || this->State == GameState::GAME_WIN)
 	{
 		// 需要手动调整绘制顺序
 
@@ -398,18 +401,22 @@ void Game::ResetPlayer() {
 	Player->Position = glm::vec2(this->Width / 2 - PLAYER_SIZE.x / 2, this->Height - PLAYER_SIZE.y);
 	Ball->Reset(Player->Position + glm::vec2(PLAYER_SIZE.x / 2 - BALL_RADIUS, -(BALL_RADIUS * 2)), INITIAL_BALL_VELOCITY);
 	// Also disable all active powerups
+	for (PowerUp& powerUp : this->PowerUps) {
+		powerUp.Destroyed = true;
+	}
+	this->PowerUps.clear();
 	Effects->Chaos = Effects->Confuse = GL_FALSE;
 	Ball->PassThrough = Ball->Sticky = GL_FALSE;
 	Player->Color = glm::vec3(1.0f);
 	Ball->Color = glm::vec3(1.0f);
 }
 
-GLboolean ShouldSpawn(GLuint chance);
 GLboolean ShouldSpawn(GLuint chance)
 {
 	GLuint random = rand() % chance;
 	return random == 0;
 }
+
 void Game::SpawnPowerUps(GameObject& block)
 {
 	if (ShouldSpawn(75)) // 1/75的几率
@@ -490,7 +497,6 @@ void Game::UpdatePowerUps(GLfloat dt)
 	), this->PowerUps.end());
 }
 
-
 void ActivatePowerUp(PowerUp& powerUp)
 {
 	// 根据道具类型发动道具
@@ -523,6 +529,7 @@ void ActivatePowerUp(PowerUp& powerUp)
 			Effects->Chaos = GL_TRUE;
 	}
 }
+
 GLboolean isOtherPowerUpActive(std::vector<PowerUp>& powerUps, std::string type)
 {
 	for (const PowerUp& powerUp : powerUps)
