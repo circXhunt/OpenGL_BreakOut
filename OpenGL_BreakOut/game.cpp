@@ -57,8 +57,7 @@ Game::~Game()
 void Game::Init()
 {
 	// Physics
-	Physics_ = new Physics();
-	Physics_->Test();
+	Physics_ = new Physics(this->Width, this->Height);
 
 	// Text
 	Text = new TextRenderer(this->Width, this->Height);
@@ -257,7 +256,8 @@ void Game::ProcessInput(GLfloat dt)
 
 void Game::Render()
 {
-
+	Physics_->Render();
+	return;
 	if (this->State == GameState::GAME_ACTIVE || this->State == GameState::GAME_MENU || this->State == GameState::GAME_WIN)
 	{
 		// 需要手动调整绘制顺序

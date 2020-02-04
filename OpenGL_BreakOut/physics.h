@@ -1,27 +1,41 @@
 #include "box2d/box2d.h"
 #include "ball_object.h"
+#include "draw.h"
 
 #ifndef PHYSICS_H
 #define PHYSICS_H
 
 class Physics {
-public :
-	b2World *Wrold;
-	float timeStep = 1 / 60.0;      // the length of time passed to simulate (seconds)
-	Physics() :Wrold(nullptr) {
-		Init();
+public:
+	b2World* Wrold;
+
+	Physics(float width, float height) :Wrold(nullptr) {
+		Init(width, height);
+		g_debugDraw.Create();
 	}
 	~Physics()
 	{
 		delete Wrold;
+		g_debugDraw.Destroy();
 	}
 
 	void Update(float dt) {
-		
+
 		int32 velocityIterations = 8;    // how strongly to correct velocity
 		int32 positionIterations = 3;    // how strongly to correct position
 
-		Wrold->Step(timeStep, velocityIterations, positionIterations);
+		Wrold->Step(dt, velocityIterations, positionIterations);
+
+	}
+
+	void Render() {
+		uint32 flags = 0;
+		flags += b2Draw::e_shapeBit;
+		flags += b2Draw::e_jointBit;
+		flags += b2Draw::e_aabbBit;
+		flags += b2Draw::e_centerOfMassBit;
+		g_debugDraw.SetFlags(flags);
+		Wrold->DrawDebugData();
 	}
 
 	b2Body* CreateBoxPhysics(GameObject& obj) {
@@ -34,6 +48,7 @@ public :
 		boxBox.SetAsBox(obj.Size.x, obj.Size.y);
 
 		boxBody->CreateFixture(&boxBox, 0.0f);
+
 		return boxBody;
 	}
 	b2Body* CreatePlayerPhysics(GameObject& obj) {
@@ -66,21 +81,28 @@ public :
 	//b2Body* CreateWallPhysics() {}
 
 	void Test() {
-		b2BodyDef groundBodyDef;
-		groundBodyDef.position.Set(0.0f, -10.0f);
-		b2Body* groundBody = Wrold->CreateBody(&groundBodyDef);
 
-		b2PolygonShape groundBox;
-		groundBox.SetAsBox(50.0f, 10.0f);
-
-		groundBody->CreateFixture(&groundBox, 0.0f);
 	}
 
 private:
-	void Init() {
-		b2Vec2 gravity(0.0f, -10.0f);
+	void Init(float width, float height) {
+		b2Vec2 gravity(0.0f, 0.0f);
 		Wrold = new b2World(gravity);
 
+		Wrold->SetDebugDraw(&g_debugDraw);
+
+		b2BodyDef WallBodyDef;
+		b2Body* wallBody = Wrold->CreateBody(&WallBodyDef);
+
+		b2EdgeShape wallBox;
+		wallBox.Set(b2Vec2_zero, b2Vec2(0, height));
+		wallBody->CreateFixture(&wallBox, 0.0f);
+
+		wallBox.Set(b2Vec2_zero, b2Vec2(width, 0));
+		wallBody->CreateFixture(&wallBox, 0.0f);
+
+		wallBox.Set(b2Vec2(width, 0), b2Vec2(width, height));
+		wallBody->CreateFixture(&wallBox, 0.0f);
 	}
 };
 

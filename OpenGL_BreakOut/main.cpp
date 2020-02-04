@@ -23,7 +23,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 // The Width of the screen
 const GLuint SCREEN_WIDTH = 1600;
 // The height of the screen
-const GLuint SCREEN_HEIGHT = 1000;
+const GLuint SCREEN_HEIGHT = 900;
 
 Game game(SCREEN_WIDTH, SCREEN_HEIGHT);
 

@@ -151,6 +151,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ball_object.cpp" />
+    <ClCompile Include="draw.cpp" />
     <ClCompile Include="game_level.cpp" />
     <ClCompile Include="game_object.cpp" />
     <ClCompile Include="main.cpp" />
@@ -169,6 +170,7 @@
     <ClInclude Include="ball_object.h" />
     <ClInclude Include="Collision.h" />
     <ClInclude Include="debugger.h" />
+    <ClInclude Include="draw.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="game_level.h" />
     <ClInclude Include="game_object.h" />
