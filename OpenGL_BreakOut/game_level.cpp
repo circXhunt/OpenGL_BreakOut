@@ -64,6 +64,7 @@ void GameLevel::init(std::vector<std::vector<GLuint>> tileData, Physics& physics
 				);
 				obj.IsSolid = GL_TRUE;
 				obj.Collision = physics.CreateBoxPhysics(obj);
+				obj.Collision->SetActive(GL_FALSE);
 				this->Bricks.push_back(obj);
 			}
 			else if (tileData[y][x] > 1)
@@ -82,6 +83,7 @@ void GameLevel::init(std::vector<std::vector<GLuint>> tileData, Physics& physics
 				glm::vec2 size(unit_width, unit_height);
 				auto box = GameObject(pos, size, ResourceManager::GetTexture("block"), color);
 				box.Collision = physics.CreateBoxPhysics(box);
+				box.Collision->SetActive(GL_FALSE);
 				this->Bricks.push_back(
 					box
 				);

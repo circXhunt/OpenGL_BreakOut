@@ -7,7 +7,7 @@
 ** option) any later version.
 ******************************************************************/
 #include "game_object.h"
-
+#include "convert.h"
 
 GameObject::GameObject()
 	: Position(0, 0), Size(1, 1), Velocity(0.0f), Color(1.0f), Rotation(0.0f), Sprite(), IsSolid(false), Destroyed(false), Collision(nullptr) { }
@@ -24,7 +24,6 @@ void GameObject::Update(float dt)
 {
 	if (Collision)
 	{
-		this->Position.x = Collision->GetPosition().x;
-		this->Position.y = Collision->GetPosition().y;
+		this->Position = Convert::ph2pi(*this);
 	}
 }

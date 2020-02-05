@@ -169,6 +169,7 @@
   <ItemGroup>
     <ClInclude Include="ball_object.h" />
     <ClInclude Include="Collision.h" />
+    <ClInclude Include="convert.h" />
     <ClInclude Include="debugger.h" />
     <ClInclude Include="draw.h" />
     <ClInclude Include="game.h" />

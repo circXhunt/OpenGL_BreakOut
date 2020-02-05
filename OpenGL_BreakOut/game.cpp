@@ -52,6 +52,8 @@ Game::~Game()
 	delete Ball;
 	delete Particles;
 	delete Effects;
+	delete Text;
+	delete Physics_;
 }
 
 void Game::Init()
@@ -63,7 +65,7 @@ void Game::Init()
 	Text = new TextRenderer(this->Width, this->Height);
 	Text->Load("resources/fonts/ocraext.TTF", 24);
 	// BGM
-	SoundEngine->play2D("resources/audio/breakout.mp3", GL_TRUE);
+	//SoundEngine->play2D("resources/audio/breakout.mp3", GL_TRUE);
 
 	// 加载着色器
 	ResourceManager::LoadShader("resources/shaders/sprite.vs", "resources/shaders/sprite.fs", "sprite");
@@ -193,19 +195,27 @@ void Game::ProcessInput(GLfloat dt)
 		// 移动挡板
 		if (this->Keys[GLFW_KEY_A])
 		{
-			if (Player->Position.x >= 0) {
-				Player->Position.x -= velocity;
-				if (Ball->Stuck)
-					Ball->Position.x -= velocity;
-			}
+			//if (Player->Position.x >= 0) {
+			//	Player->Position.x -= velocity;
+			//	if (Ball->Stuck)
+			//		Ball->Position.x -= velocity;
+			//}
+			Player->Collision->SetLinearVelocity(b2Vec2(-PLAYER_VELOCITY, 0));
+			
 		}
+		else
 		if (this->Keys[GLFW_KEY_D])
 		{
-			if (Player->Position.x <= this->Width - Player->Size.x) {
+		/*	if (Player->Position.x <= this->Width - Player->Size.x) {
 				Player->Position.x += velocity;
 				if (Ball->Stuck)
 					Ball->Position.x += velocity;
-			}
+			}*/
+			Player->Collision->SetLinearVelocity(b2Vec2(PLAYER_VELOCITY, 0));
+		}
+		else
+		{
+			Player->Collision->SetLinearVelocity(b2Vec2_zero);
 		}
 		if (this->Keys[GLFW_KEY_SPACE])
 			Ball->Stuck = false;
@@ -226,6 +236,9 @@ void Game::ProcessInput(GLfloat dt)
 		if (this->Keys[GLFW_KEY_ENTER] && !this->KeysProcessed[GLFW_KEY_ENTER])
 		{
 			this->State = GameState::GAME_ACTIVE;
+			for (auto& box : this->Levels[this->Level].Bricks) {
+				box.Collision->SetActive(GL_TRUE);
+			}
 			this->KeysProcessed[GLFW_KEY_ENTER] = GL_TRUE;
 		}
 		if (this->Keys[GLFW_KEY_W] && !this->KeysProcessed[GLFW_KEY_W])
@@ -256,8 +269,8 @@ void Game::ProcessInput(GLfloat dt)
 
 void Game::Render()
 {
-	Physics_->Render();
-	return;
+	//Physics_->Render();
+	//return;
 	if (this->State == GameState::GAME_ACTIVE || this->State == GameState::GAME_MENU || this->State == GameState::GAME_WIN)
 	{
 		// 需要手动调整绘制顺序
@@ -311,6 +324,7 @@ void Game::Render()
 			"Press ENTER to retry or ESC to quit", 130.0, Height / 2, 1.0, glm::vec3(1.0, 1.0, 0.0)
 		);
 	}
+	Physics_->Render();
 }
 
 void Game::DoCollisions()

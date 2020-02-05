@@ -1,6 +1,7 @@
 #include "box2d/box2d.h"
 #include "ball_object.h"
 #include "draw.h"
+#include "convert.h"
 
 #ifndef PHYSICS_H
 #define PHYSICS_H
@@ -41,11 +42,11 @@ public:
 	b2Body* CreateBoxPhysics(GameObject& obj) {
 		b2BodyDef boxBodyDef;
 		boxBodyDef.type = b2_staticBody;
-		boxBodyDef.position.Set(obj.Position.x, obj.Position.y);
+		boxBodyDef.position = Convert::pi2ph(obj);
 		b2Body* boxBody = Wrold->CreateBody(&boxBodyDef);
 
 		b2PolygonShape boxBox;
-		boxBox.SetAsBox(obj.Size.x, obj.Size.y);
+		boxBox.SetAsBox(obj.Size.x/2, obj.Size.y/2);
 
 		boxBody->CreateFixture(&boxBox, 0.0f);
 
@@ -53,12 +54,12 @@ public:
 	}
 	b2Body* CreatePlayerPhysics(GameObject& obj) {
 		b2BodyDef playerBoxDef;
-		playerBoxDef.type = b2_kinematicBody;
-		playerBoxDef.position.Set(obj.Position.x, obj.Position.y);
+		playerBoxDef.type = b2_dynamicBody;
+		playerBoxDef.position = Convert::pi2ph(obj);
 		b2Body* playerBody = Wrold->CreateBody(&playerBoxDef);
 
 		b2PolygonShape playerBox;
-		playerBox.SetAsBox(obj.Size.x, obj.Size.y);
+		playerBox.SetAsBox(obj.Size.x/2, obj.Size.y/2);
 
 		playerBody->CreateFixture(&playerBox, 0.0f);
 
@@ -67,7 +68,7 @@ public:
 	b2Body* CreateBallPhysics(BallObject& obj) {
 		b2BodyDef ballBoxDef;
 		ballBoxDef.type = b2_dynamicBody;
-		ballBoxDef.position.Set(obj.Position.x, obj.Position.y);
+		ballBoxDef.position = Convert::pi2ph(obj);
 		b2Body* ballBody = Wrold->CreateBody(&ballBoxDef);
 
 		b2CircleShape ballBox;

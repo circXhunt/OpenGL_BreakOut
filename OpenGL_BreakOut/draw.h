@@ -43,7 +43,7 @@ struct Camera
 		m_center.Set(0.0f, 0.0f);
 		m_zoom = 1.0f;
 		m_width = 1600;
-		m_height = 1000;
+		m_height = 900;
 	}
 
 	b2Vec2 ConvertScreenToWorld(const b2Vec2& screenPoint);
