@@ -115,7 +115,7 @@ void Game::Init()
 		this->Width / 2 - PLAYER_SIZE.x / 2,
 		this->Height - PLAYER_SIZE.y
 	);
-	Player = new GameObject(playerPos, PLAYER_SIZE, ResourceManager::GetTexture("paddle"));
+	Player = new GameObject(playerPos, PLAYER_SIZE, ResourceManager::GetTexture("paddle"), "Player");
 	Player->Collision = Physics_->CreatePlayerPhysics(*Player);
 
 	// 加载球
@@ -193,6 +193,7 @@ void Game::ProcessInput(GLfloat dt)
 	{
 		GLfloat velocity = PLAYER_VELOCITY * dt;
 		// 移动挡板
+		auto currentPos = Player->Collision->GetPosition();
 		if (this->Keys[GLFW_KEY_A])
 		{
 			//if (Player->Position.x >= 0) {
@@ -200,25 +201,23 @@ void Game::ProcessInput(GLfloat dt)
 			//	if (Ball->Stuck)
 			//		Ball->Position.x -= velocity;
 			//}
-			Player->Collision->SetLinearVelocity(b2Vec2(-PLAYER_VELOCITY, 0));
+			Player->Collision->SetTransform(b2Vec2(currentPos.x - velocity, currentPos.y), 0);
+		}
+		else
+			if (this->Keys[GLFW_KEY_D])
+			{
+				/*	if (Player->Position.x <= this->Width - Player->Size.x) {
+						Player->Position.x += velocity;
+						if (Ball->Stuck)
+							Ball->Position.x += velocity;
+					}*/
+				Player->Collision->SetTransform(b2Vec2(currentPos.x + velocity, currentPos.y), 0);
+			}
+		if (this->Keys[GLFW_KEY_SPACE]) {
+			Ball->Stuck = false;
+			Ball->SetVelocity(INITIAL_BALL_VELOCITY);
 			
 		}
-		else
-		if (this->Keys[GLFW_KEY_D])
-		{
-		/*	if (Player->Position.x <= this->Width - Player->Size.x) {
-				Player->Position.x += velocity;
-				if (Ball->Stuck)
-					Ball->Position.x += velocity;
-			}*/
-			Player->Collision->SetLinearVelocity(b2Vec2(PLAYER_VELOCITY, 0));
-		}
-		else
-		{
-			Player->Collision->SetLinearVelocity(b2Vec2_zero);
-		}
-		if (this->Keys[GLFW_KEY_SPACE])
-			Ball->Stuck = false;
 
 		// Debug
 		if (this->Keys[GLFW_KEY_X] && !this->KeysProcessed[GLFW_KEY_X])
@@ -324,9 +323,9 @@ void Game::Render()
 			"Press ENTER to retry or ESC to quit", 130.0, Height / 2, 1.0, glm::vec3(1.0, 1.0, 0.0)
 		);
 	}
-	Physics_->Render();
+	//Physics_->Render();
 }
-
+/*
 void Game::DoCollisions()
 {
 	for (GameObject& box : this->Levels[this->Level].Bricks)
@@ -411,9 +410,89 @@ void Game::DoCollisions()
 		}
 	}
 }
-
+*/
 void Game::DoCollisionsBox2D() {
 
+	for (GameObject& box : this->Levels[this->Level].Bricks)
+	{
+		if (!box.Destroyed)
+		{
+			auto result = Collision::CheckCollision(*Ball, box);
+
+			if (std::get<0>(result))
+			{
+				std::cout << "Collision!!" << std::endl;
+				if (!box.IsSolid) {
+
+					box.Destroy();
+					this->SpawnPowerUps(box);
+					SoundEngine->play2D("resources/audio/bleep.mp3", GL_FALSE);
+				}
+				else
+				{   // 如果是实心的砖块则激活shake特效
+					ShakeTime = 0.05f;
+					Effects->Shake = true;
+					SoundEngine->play2D("resources/audio/solid.wav", GL_FALSE);
+				}
+				Direction dir = std::get<1>(result);
+				glm::vec2 diff_vector = std::get<2>(result);
+				if (!(Ball->PassThrough && !box.IsSolid))
+				{
+					if (dir == LEFT || dir == RIGHT)
+					{
+
+
+						// 重定位
+						GLfloat penetration = Ball->Radius - std::abs(diff_vector.x);
+						if (dir == LEFT)
+							Ball->Position.x += penetration; // 将球右移
+						else
+							Ball->Position.x -= penetration; // 将球左移
+					}
+					else // 垂直方向碰撞
+					{
+
+						// 重定位
+						GLfloat penetration = Ball->Radius - std::abs(diff_vector.y);
+						if (dir == UP)
+							Ball->Position.y -= penetration; // 将球上移
+						else
+							Ball->Position.y += penetration; // 将球下移
+					}
+				}
+			}
+		}
+	}
+	auto result = Collision::CheckCollision(*Ball, *Player);
+	if (!Ball->Stuck && std::get<0>(result))
+	{
+		SoundEngine->play2D("resources/audio/bleep.wav", GL_FALSE);
+		// 检查碰到了挡板的哪个位置，并根据碰到哪个位置来改变速度
+		GLfloat centerBoard = Player->Position.x + Player->Size.x / 2;
+		GLfloat distance = (Ball->Position.x + Ball->Radius) - centerBoard;
+		GLfloat percentage = distance / (Player->Size.x / 2);
+		// 依据结果移动
+		GLfloat strength = 2.0f;
+
+		// If Sticky powerup is activated, also stick ball to paddle once new velocity vectors were calculated
+		Ball->Stuck = Ball->Sticky;
+	}
+
+	for (PowerUp& powerUp : this->PowerUps)
+	{
+		if (!powerUp.Destroyed)
+		{
+			if (powerUp.Position.y >= this->Height)
+				powerUp.Destroyed = GL_TRUE;
+			if (Collision::CheckCollision(*Player, powerUp))
+			{   // 道具与挡板接触，激活它！
+				ActivatePowerUp(powerUp);
+				SoundEngine->play2D("resources/audio/powerup.wav", GL_FALSE);
+				powerUp.Destroyed = GL_TRUE;
+				powerUp.Activated = GL_TRUE;
+			}
+		}
+	}
 }
 
 void Game::ResetLevel() {
@@ -483,7 +562,6 @@ void Game::UpdatePowerUps(GLfloat dt)
 {
 	for (PowerUp& powerUp : this->PowerUps)
 	{
-		powerUp.Position += powerUp.Velocity * dt;
 		if (powerUp.Activated)
 		{
 			powerUp.Duration -= dt;
@@ -536,7 +614,7 @@ void ActivatePowerUp(PowerUp& powerUp)
 	// 根据道具类型发动道具
 	if (powerUp.Type == "speed")
 	{
-		Ball->Velocity *= 1.2;
+
 	}
 	else if (powerUp.Type == "sticky")
 	{

@@ -6,11 +6,36 @@
 #ifndef PHYSICS_H
 #define PHYSICS_H
 
+class MyListener : public b2ContactListener
+{
+	void BeginContact(b2Contact* contact)
+	{
+		b2Fixture* fixtureA = contact->GetFixtureA();
+		b2Fixture* fixtureB = contact->GetFixtureB();
+
+		b2Body* body1 = fixtureA->GetBody();
+		b2Body* body2 = fixtureB->GetBody();
+		if (body1->GetUserData() != nullptr && body2->GetUserData() != nullptr)
+		{
+			auto& g1 = *((GameObject*)body1->GetUserData());
+			auto& g2 = *((GameObject*)body2->GetUserData());
+			std::cout << "started" << " " << g1.Type << "  with " << g2.Type << std::endl;
+		}
+	}
+	void EndContact(b2Contact* contact)
+	{
+
+	}
+};
+
 class Physics {
 public:
 	b2World* Wrold;
-
-	Physics(float width, float height) :Wrold(nullptr) {
+	MyListener myListener;
+	std::string boxStr = "Box";
+	std::string playerStr = "Player";
+	std::string ballStr = "Ball";
+	Physics(float width, float height) :Wrold(nullptr), myListener() {
 		Init(width, height);
 		g_debugDraw.Create();
 	}
@@ -46,23 +71,27 @@ public:
 		b2Body* boxBody = Wrold->CreateBody(&boxBodyDef);
 
 		b2PolygonShape boxBox;
-		boxBox.SetAsBox(obj.Size.x/2, obj.Size.y/2);
+		boxBox.SetAsBox(obj.Size.x / 2, obj.Size.y / 2);
 
-		boxBody->CreateFixture(&boxBox, 0.0f);
+		boxBody->CreateFixture(&boxBox, 1.0f);
+
+		boxBody->SetUserData(&obj);
+		//boxBody->SetUserData(&boxStr);
 
 		return boxBody;
 	}
 	b2Body* CreatePlayerPhysics(GameObject& obj) {
 		b2BodyDef playerBoxDef;
-		playerBoxDef.type = b2_dynamicBody;
+		playerBoxDef.type = b2_kinematicBody;
 		playerBoxDef.position = Convert::pi2ph(obj);
 		b2Body* playerBody = Wrold->CreateBody(&playerBoxDef);
 
 		b2PolygonShape playerBox;
-		playerBox.SetAsBox(obj.Size.x/2, obj.Size.y/2);
+		playerBox.SetAsBox(obj.Size.x / 2, obj.Size.y / 2);
 
-		playerBody->CreateFixture(&playerBox, 0.0f);
-
+		playerBody->CreateFixture(&playerBox, 1.0f);
+		playerBody->SetUserData(&obj);
+		//playerBody->SetUserData(&playerStr);
 		return playerBody;
 	}
 	b2Body* CreateBallPhysics(BallObject& obj) {
@@ -71,11 +100,20 @@ public:
 		ballBoxDef.position = Convert::pi2ph(obj);
 		b2Body* ballBody = Wrold->CreateBody(&ballBoxDef);
 
+
 		b2CircleShape ballBox;
 		ballBox.m_radius = obj.Radius;
+		b2FixtureDef fixtureDef;
+		fixtureDef.density = 1.0f;
+		fixtureDef.friction = 0.3f;
 
-		ballBody->CreateFixture(&ballBox, 0.0f);
+		fixtureDef.shape = &ballBox;
 
+		//ballBody->CreateFixture(&ballBox, 1.0f);
+		ballBody->CreateFixture(&fixtureDef);
+		ballBody->SetUserData(&obj);
+		
+		//ballBody->SetUserData(&ballStr);
 		return ballBody;
 	}
 
@@ -104,6 +142,8 @@ private:
 
 		wallBox.Set(b2Vec2(width, 0), b2Vec2(width, height));
 		wallBody->CreateFixture(&wallBox, 0.0f);
+
+		Wrold->SetContactListener(&myListener);
 	}
 };
 

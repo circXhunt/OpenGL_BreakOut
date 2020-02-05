@@ -22,23 +22,45 @@
 class GameObject
 {
 public:
-    // Object state
-    glm::vec2   Position, Size, Velocity;
-    glm::vec3   Color;
-    GLfloat     Rotation;
-    GLboolean   IsSolid;
-    GLboolean   Destroyed;
-    // Render state
-    Texture2D   Sprite;
+	// Object state
+	glm::vec2   Position, Size;
+	glm::vec3   Color;
+	GLfloat     Rotation;
+	GLboolean   IsSolid;
+	GLboolean   Destroyed;
+	// Render state
+	Texture2D   Sprite;
+	std::string Type = "GameObject";
+	// physics
+	b2Body* Collision;
+	// Constructor(s)
 
-    // physics
-    b2Body* Collision;
-    // Constructor(s)
-    GameObject();
-    GameObject(glm::vec2 pos, glm::vec2 size, Texture2D sprite, glm::vec3 color = glm::vec3(1.0f), glm::vec2 velocity = glm::vec2(0.0f, 0.0f));
-    // Draw sprite
-    virtual void Draw(SpriteRenderer& renderer);
-    virtual void Update(float dt);
+	const b2Vec2& GetVelocity() {
+		return Collision->GetLinearVelocity();
+	}
+
+	void SetVelocity(b2Vec2 vel) {
+		Collision->SetLinearVelocity(vel);
+	}
+
+	void SetVelocity(glm::vec2 vel) {
+		Collision->SetLinearVelocity(b2Vec2(vel.x, vel.y));
+	}
+
+	virtual void Destroy() {
+		Destroyed = GL_TRUE;
+		Collision->SetActive(GL_FALSE);
+	}
+	virtual void Active() {
+		Destroyed = GL_FALSE;
+		Collision->SetActive(GL_TRUE);
+	}
+	GameObject();
+	GameObject(glm::vec2 pos, glm::vec2 size, Texture2D sprite, std::string type = "GameObject", glm::vec3 color = glm::vec3(1.0f), glm::vec2 velocity = glm::vec2(0.0f, 0.0f));
+	virtual ~GameObject();
+	// Draw sprite
+	virtual void Draw(SpriteRenderer& renderer);
+	virtual void Update(float dt);
 };
 
 #endif

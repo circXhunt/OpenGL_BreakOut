@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\game_object">
+      <UniqueIdentifier>{ed997494-485e-4931-bc25-2bb11d493c18}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -80,16 +83,10 @@
     <ClInclude Include="triangle_renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="game_object.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="game_level.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource_manager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ball_object.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Collision.h">
@@ -124,6 +121,12 @@
     </ClInclude>
     <ClInclude Include="convert.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ball_object.h">
+      <Filter>Header Files\game_object</Filter>
+    </ClInclude>
+    <ClInclude Include="game_object.h">
+      <Filter>Header Files\game_object</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

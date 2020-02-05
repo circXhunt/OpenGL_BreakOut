@@ -16,6 +16,8 @@ public:
 
     glm::vec2 Move(GLfloat dt, GLuint window_width);
     void      Reset(glm::vec2 position, glm::vec2 velocity);
+
+    void Update(float dt) override;
 };
 
 
