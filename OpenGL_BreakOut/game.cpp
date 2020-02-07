@@ -421,7 +421,6 @@ void Game::DoCollisionsBox2D() {
 
 			if (std::get<0>(result))
 			{
-				std::cout << "Collision!!" << std::endl;
 				if (!box.IsSolid) {
 
 					box.Destroy();

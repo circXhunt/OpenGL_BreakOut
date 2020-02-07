@@ -19,7 +19,21 @@ class MyListener : public b2ContactListener
 		{
 			auto& g1 = *((GameObject*)body1->GetUserData());
 			auto& g2 = *((GameObject*)body2->GetUserData());
-			std::cout << "started" << " " << g1.Type << "  with " << g2.Type << std::endl;
+			if (g2.Type == "Ball")
+			{
+				std::swap(g1, g2);
+			}
+			if (g1.Type == "Ball")
+			{
+				if (g2.Type == "Player")
+				{
+
+				}
+				else if (g2.Type == "Box")
+				{
+
+				}
+			}
 		}
 	}
 	void EndContact(b2Contact* contact)
