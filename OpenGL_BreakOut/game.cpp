@@ -38,7 +38,7 @@ GLboolean ShouldSpawn(GLuint chance);
 
 
 Game::Game(GLuint width, GLuint height)
-	:Level(0), State(GameState::GAME_MENU), Keys(), KeysProcessed(), Width(width), Height(height), Lives(3)
+	:Level(0), State(GameState::GAME_MENU), Keys(), KeysProcessed(), Width(width), Height(height), Lives(3), Gui()
 {
 
 }
