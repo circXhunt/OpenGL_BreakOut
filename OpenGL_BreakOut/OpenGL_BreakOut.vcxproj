@@ -153,13 +153,7 @@
     <ClCompile Include="ball_object.cpp" />
     <ClCompile Include="game_level.cpp" />
     <ClCompile Include="game_object.cpp" />
-    <ClCompile Include="src\vendor\imgui\imgui.cpp" />
-    <ClCompile Include="src\vendor\imgui\imgui_demo.cpp" />
-    <ClCompile Include="src\vendor\imgui\imgui_draw.cpp" />
-    <ClCompile Include="src\vendor\imgui\imgui_impl_glfw.cpp" />
-    <ClCompile Include="src\vendor\imgui\imgui_impl_opengl3.cpp" />
-    <ClCompile Include="src\vendor\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="_main.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="game.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="particle_generator.cpp" />
@@ -178,7 +172,6 @@
     <ClInclude Include="game.h" />
     <ClInclude Include="game_level.h" />
     <ClInclude Include="game_object.h" />
-    <ClInclude Include="gui.h" />
     <ClInclude Include="particle.h" />
     <ClInclude Include="particle_generator.h" />
     <ClInclude Include="post_processor.h" />
@@ -186,14 +179,6 @@
     <ClInclude Include="resource_manager.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="sprite_renderer.h" />
-    <ClInclude Include="src\vendor\imgui\imconfig.h" />
-    <ClInclude Include="src\vendor\imgui\imgui.h" />
-    <ClInclude Include="src\vendor\imgui\imgui_impl_glfw.h" />
-    <ClInclude Include="src\vendor\imgui\imgui_impl_opengl3.h" />
-    <ClInclude Include="src\vendor\imgui\imgui_internal.h" />
-    <ClInclude Include="src\vendor\imgui\imstb_rectpack.h" />
-    <ClInclude Include="src\vendor\imgui\imstb_textedit.h" />
-    <ClInclude Include="src\vendor\imgui\imstb_truetype.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="texture.h" />
     <ClInclude Include="texture_renderer.h" />

@@ -12,7 +12,6 @@
 #include <vector>
 #include "game_level.h"
 #include "power_up.h"
-#include "gui.h"
 
 
 // Represents the current state of the game
@@ -46,7 +45,6 @@ public:
     GLuint                 Level;
     std::vector<PowerUp>  PowerUps;
     GLuint Lives;
-    GUI Gui;
 
     // Constructor/Destructor
     Game(GLuint width, GLuint height);
