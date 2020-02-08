@@ -6,7 +6,6 @@ void GameLevel::Load(const GLchar* file, GLuint levelWidth, GLuint levelHeight)
 	this->Bricks.clear();
 
 	GLuint tileCode;
-	GameLevel level;
 	std::string line;
 	std::ifstream fstream(file);
 	std::vector<std::vector<GLuint>> tileData;

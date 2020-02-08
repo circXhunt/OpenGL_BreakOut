@@ -1,5 +1,6 @@
 #include <vector>
 #include "game_object.h"
+#include "resource_manager.h"
 
 #ifndef GAME_LEVEL_H
 #define GAME_LEVEL_H
@@ -7,11 +8,17 @@
 class GameLevel
 {
 public:
-    GameLevel():Bricks() {}
+    GameLevel(std::string levelName):Bricks(), LevelName(levelName) {
+        std::string path = "resources/textures/background/" + LevelName + ".jpg";
+        ResourceManager::LoadTexture(path.c_str(), GL_FALSE, LevelName);
+    }
 
 	std::vector<GameObject> Bricks;
+    std::string LevelName;
 
-
+    Texture2D GetBackground() {
+        return ResourceManager::GetTexture(LevelName);
+    }
     // 从文件中加载关卡
     void Load(const GLchar* file, GLuint levelWidth, GLuint levelHeight);
     // 渲染关卡

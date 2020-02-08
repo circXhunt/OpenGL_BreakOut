@@ -92,10 +92,10 @@ void Game::Init()
 	ResourceManager::LoadTexture("resources/textures/powerup_chaos.png", GL_TRUE, "tex_chaos");
 
 	// ¼ÓÔØ¹Ø¿¨
-	GameLevel one; one.Load("resources/levels/one.lvl", this->Width, this->Height * 0.5);
-	GameLevel two; two.Load("resources/levels/two.lvl", this->Width, this->Height * 0.5);
-	GameLevel three; three.Load("resources/levels/three.lvl", this->Width, this->Height * 0.5);
-	GameLevel four; four.Load("resources/levels/four.lvl", this->Width, this->Height * 0.5);
+	GameLevel one("one"); one.Load("resources/levels/one.lvl", this->Width, this->Height * 0.5);
+	GameLevel two("two"); two.Load("resources/levels/two.lvl", this->Width, this->Height * 0.5);
+	GameLevel three("three"); three.Load("resources/levels/three.lvl", this->Width, this->Height * 0.5);
+	GameLevel four("four"); four.Load("resources/levels/four.lvl", this->Width, this->Height * 0.5);
 	this->Levels.push_back(one);
 	this->Levels.push_back(two);
 	this->Levels.push_back(three);
@@ -248,7 +248,7 @@ void Game::Render()
 		Effects->BeginRender();
 
 		// »æÖÆ±³¾°
-		Renderer->DrawSprite(ResourceManager::GetTexture("background"),
+		Renderer->DrawSprite(this->Levels[this->Level].GetBackground(),
 			glm::vec2(0, 0), glm::vec2(this->Width, this->Height), 0.0f
 		);
 
