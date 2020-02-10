@@ -29,6 +29,11 @@ public:
     GLboolean   Destroyed;
     // Render state
     Texture2D   Sprite;
+    glm::vec2 CenterPos2LeftUpPos(glm::vec2 cpPos) {
+        cpPos.x -= Size.x / 2;
+        cpPos.y -= Size.y / 2;
+        return cpPos;
+    }
     // Constructor(s)
     GameObject();
     GameObject(glm::vec2 pos, glm::vec2 size, Texture2D sprite, glm::vec3 color = glm::vec3(1.0f), glm::vec2 velocity = glm::vec2(0.0f, 0.0f));

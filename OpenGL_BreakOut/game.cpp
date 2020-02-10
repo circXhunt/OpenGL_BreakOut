@@ -29,12 +29,27 @@ BallObject* Ball;
 ParticleGenerator* Particles;
 PostProcessor* Effects;
 TextRenderer* Text;
+GameObject* qb;
 
 GLfloat ShakeTime = 0.0f;
+GLboolean GameClear = GL_FALSE;
+GameState LastGameState = GameState::GAME_MENU;
+
+glm::vec3 SELECT_COLOR = glm::vec3(1.0, 1.0, 0.0);
+glm::vec3 UNSELECT_COLOR = glm::vec3(1.0, 1.0, 1.0);
+glm::vec3 game_start_color = SELECT_COLOR;
+glm::vec3 game_continue_color = UNSELECT_COLOR;
+GLuint select_button = 0;
 
 void ActivatePowerUp(PowerUp& powerUp);
 GLboolean isOtherPowerUpActive(std::vector<PowerUp>& powerUps, std::string type);
 GLboolean ShouldSpawn(GLuint chance);
+void Menu_Enter();
+void Menu_Exit();
+void Game_Enter();
+void Game_Exit();
+void Win_Enter();
+void Win_Exit();
 
 
 Game::Game(GLuint width, GLuint height)
@@ -58,7 +73,7 @@ void Game::Init()
 	Text = new TextRenderer(this->Width, this->Height);
 	Text->Load("resources/fonts/ocraext.TTF", 24);
 	// BGM
-	SoundEngine->play2D("resources/audio/breakout.mp3", GL_TRUE);
+	SoundEngine->play2D("resources/audio/Sis puella magica!.mp3", GL_TRUE);
 
 	// 加载着色器
 	ResourceManager::LoadShader("resources/shaders/sprite.vs", "resources/shaders/sprite.fs", "sprite");
@@ -83,6 +98,7 @@ void Game::Init()
 	ResourceManager::LoadTexture("resources/textures/awesomeface.png", GL_TRUE, "face");
 	ResourceManager::LoadTexture("resources/textures/block.png", GL_FALSE, "block");
 	ResourceManager::LoadTexture("resources/textures/block_solid.png", GL_FALSE, "block_solid");
+	ResourceManager::LoadTexture("resources/textures/300px-QB.jpg", GL_FALSE, "qb");
 	ResourceManager::LoadTexture("resources/textures/paddle.png", true, "paddle");
 	ResourceManager::LoadTexture("resources/textures/powerup_speed.png", GL_TRUE, "tex_speed");
 	ResourceManager::LoadTexture("resources/textures/powerup_sticky.png", GL_TRUE, "tex_sticky");
@@ -90,6 +106,9 @@ void Game::Init()
 	ResourceManager::LoadTexture("resources/textures/powerup_increase.png", GL_TRUE, "tex_size");
 	ResourceManager::LoadTexture("resources/textures/powerup_confuse.png", GL_TRUE, "tex_confuse");
 	ResourceManager::LoadTexture("resources/textures/powerup_chaos.png", GL_TRUE, "tex_chaos");
+	ResourceManager::LoadTexture("resources/textures/background/menu.png", GL_TRUE, "menu");
+	ResourceManager::LoadTexture("resources/textures/background/logo.png", GL_TRUE, "logo");
+
 
 	// 加载关卡
 	GameLevel one("one"); one.Load("resources/levels/one.lvl", this->Width, this->Height * 0.5);
@@ -126,10 +145,46 @@ void Game::Init()
 
 	// 后处理特效
 	Effects = new PostProcessor(ResourceManager::GetShader("effect"), this->Width, this->Height);
+
+	// GUI
+	qb = new GameObject(glm::vec2(0.0f), glm::vec2(20, 20), ResourceManager::GetTexture("qb"));
 }
 
 void Game::Update(GLfloat dt)
 {
+	if (this->State != LastGameState)
+	{
+		switch (LastGameState)
+		{
+		case GameState::GAME_ACTIVE:
+			Game_Exit();
+			break;
+		case GameState::GAME_MENU:
+			Menu_Exit();
+			break;
+		case GameState::GAME_WIN:
+			Win_Exit();
+			break;
+		default:
+			break;
+		}
+
+		switch (this->State)
+		{
+		case GameState::GAME_ACTIVE:
+			Game_Enter();
+			break;
+		case GameState::GAME_MENU:
+			Menu_Enter();
+			break;
+		case GameState::GAME_WIN:
+			Win_Enter();
+			break;
+		default:
+			break;
+		}
+		LastGameState = this->State;
+	}
 	if (this->State == GameState::GAME_ACTIVE && this->Levels[this->Level].IsCompleted())
 	{
 		this->ResetLevel();
@@ -167,7 +222,6 @@ void Game::Update(GLfloat dt)
 	}
 
 }
-
 
 void Game::ProcessInput(GLfloat dt)
 {
@@ -207,23 +261,30 @@ void Game::ProcessInput(GLfloat dt)
 	}
 	if (this->State == GameState::GAME_MENU)
 	{
+		if (this->Keys[GLFW_KEY_UP] && !this->KeysProcessed[GLFW_KEY_UP])
+		{
+			if (select_button > 0)
+			{
+				select_button--;
+			}
+			this->KeysProcessed[GLFW_KEY_UP] = GL_TRUE;
+		}
+		if (this->Keys[GLFW_KEY_DOWN] && !this->KeysProcessed[GLFW_KEY_DOWN])
+		{
+			if (select_button == 0)
+			{
+				select_button++;
+			}
+			this->KeysProcessed[GLFW_KEY_DOWN] = GL_TRUE;
+		}
 		if (this->Keys[GLFW_KEY_ENTER] && !this->KeysProcessed[GLFW_KEY_ENTER])
 		{
-			this->State = GameState::GAME_ACTIVE;
+			if (select_button == 0)
+			{
+				this->State = GameState::GAME_ACTIVE;
+			}
+			
 			this->KeysProcessed[GLFW_KEY_ENTER] = GL_TRUE;
-		}
-		if (this->Keys[GLFW_KEY_W] && !this->KeysProcessed[GLFW_KEY_W])
-		{
-			this->Level = (this->Level + 1) % 4;
-			this->KeysProcessed[GLFW_KEY_W] = GL_TRUE;
-		}
-		if (this->Keys[GLFW_KEY_S] && !this->KeysProcessed[GLFW_KEY_S])
-		{
-			if (this->Level > 0)
-				--this->Level;
-			else
-				this->Level = 3;
-			this->KeysProcessed[GLFW_KEY_S] = GL_TRUE;
 		}
 	}
 	if (this->State == GameState::GAME_WIN)
@@ -240,8 +301,46 @@ void Game::ProcessInput(GLfloat dt)
 
 void Game::Render()
 {
+	if (this->State == GameState::GAME_MENU)
+	{
+		// 绘制背景
+		Renderer->DrawSprite(ResourceManager::GetTexture("menu"),
+			glm::vec2(0, 0), glm::vec2(this->Width, this->Height), 0.0f
+		);
 
-	if (this->State == GameState::GAME_ACTIVE || this->State == GameState::GAME_MENU || this->State == GameState::GAME_WIN)
+		// 绘制Logo
+		Renderer->DrawSprite(ResourceManager::GetTexture("logo"),
+			glm::vec2(this->Width / 2 - 260, this->Height / 2 - 270), glm::vec2(800, 200), 0.0f
+		);
+		glm::vec2 qbPos = glm::vec2(0.0f);
+		if (select_button == 0)
+		{
+			qbPos = glm::vec2(this->Width / 2 - 41, Height / 2);
+			game_start_color = SELECT_COLOR;
+			game_continue_color = UNSELECT_COLOR;
+		}
+		if (select_button == 1)
+		{
+			qbPos = glm::vec2(this->Width / 2 - 41, Height / 2 + 40);
+			game_start_color = UNSELECT_COLOR;
+			game_continue_color = SELECT_COLOR;
+		}
+		Text->RenderText(
+			"Game Start", this->Width / 2 - 11, Height / 2, 1.0, game_start_color
+		);
+		Text->RenderText(
+			"Game Continue", this->Width / 2 - 13, Height / 2 + 40, 1.0, game_continue_color
+		);
+		qb->Position = qbPos;
+		qb->Draw(*Renderer);
+		if (GameClear)
+		{
+			Text->RenderText(
+				"Level Select", 320.0, Height / 2 + 20, 1.0, glm::vec3(1.0, 1.0, 0.0)
+			);
+		}
+	}
+	else if (this->State == GameState::GAME_ACTIVE)
 	{
 		// 需要手动调整绘制顺序
 
@@ -280,12 +379,7 @@ void Game::Render()
 
 		Text->RenderText("Lives:" + ss.str(), 5.0f, 5.0f, 1.0f);
 	}
-	if (this->State == GameState::GAME_MENU)
-	{
-		Text->RenderText("Press ENTER to start", Width / 2 - 100.0f, Height / 2, 1.0f);
-		Text->RenderText("Press W or S to select level", Width / 2 - 130.0f, Height / 2 + 20.0f, 0.75f);
-	}
-	if (this->State == GameState::GAME_WIN)
+	else if (this->State == GameState::GAME_WIN)
 	{
 		Text->RenderText(
 			"You WON!!!", 320.0, Height / 2 - 20.0, 1.0, glm::vec3(0.0, 1.0, 0.0)
@@ -381,7 +475,6 @@ void Game::DoCollisions()
 	}
 }
 
-
 void Game::ResetLevel() {
 	if (this->Level == 0)
 		this->Levels[0].Load("resources/levels/one.lvl", this->Width, this->Height * 0.5f);
@@ -415,6 +508,35 @@ GLboolean ShouldSpawn(GLuint chance)
 {
 	GLuint random = rand() % chance;
 	return random == 0;
+}
+
+void Menu_Enter()
+{
+	SoundEngine->play2D("resources/audio/Sis puella magica!.mp3", GL_TRUE);
+}
+
+void Menu_Exit()
+{
+	SoundEngine->stopAllSounds();
+}
+
+void Game_Enter()
+{
+	SoundEngine->play2D("resources/audio/breakout.mp3", GL_TRUE);
+}
+
+void Game_Exit()
+{
+	SoundEngine->stopAllSounds();
+}
+
+void Win_Enter()
+{
+}
+
+void Win_Exit()
+{
+	SoundEngine->stopAllSounds();
 }
 
 void Game::SpawnPowerUps(GameObject& block)
