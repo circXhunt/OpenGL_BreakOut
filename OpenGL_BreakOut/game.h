@@ -60,6 +60,7 @@ public:
     void ResetPlayer();
     void SpawnPowerUps(GameObject& block);
     void UpdatePowerUps(GLfloat dt);
+    void SwitchState(GameState targetState);
 };
 
 #endif

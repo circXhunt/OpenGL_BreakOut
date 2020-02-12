@@ -8,7 +8,9 @@
 ******************************************************************/
 #include "game.h"
 #include "sprite_renderer.h"
-
+#include <chrono>
+#include <thread>
+#include <functional>
 #include "triangle_renderer.h"
 #include "resource_manager.h"
 #include <GLFW\glfw3.h>
@@ -20,6 +22,7 @@
 #include "debugger.h"
 #include "irrKlang/irrKlang.h"
 #include "texture_renderer.h"
+
 using namespace irrklang;
 
 ISoundEngine* SoundEngine = createIrrKlangDevice();
@@ -33,23 +36,36 @@ GameObject* qb;
 
 GLfloat ShakeTime = 0.0f;
 GLboolean GameClear = GL_FALSE;
+GLboolean GameSaved = GL_FALSE;
 GameState LastGameState = GameState::GAME_MENU;
 
-glm::vec3 SELECT_COLOR = glm::vec3(1.0, 1.0, 0.0);
-glm::vec3 UNSELECT_COLOR = glm::vec3(1.0, 1.0, 1.0);
-glm::vec3 game_start_color = SELECT_COLOR;
-glm::vec3 game_continue_color = UNSELECT_COLOR;
+glm::vec3 SELECTED_COLOR = glm::vec3(1.0, 1.0, 0.0);
+glm::vec3 UNSELECTED_COLOR = glm::vec3(1.0, 1.0, 1.0);
+glm::vec3 UNACTIVE_COLOR = glm::vec3(0.7f, 0.7f, 0.7f);
+glm::vec3 game_start_color = SELECTED_COLOR;
+glm::vec3 game_continue_color = UNSELECTED_COLOR;
 GLuint select_button = 0;
 
 void ActivatePowerUp(PowerUp& powerUp);
 GLboolean isOtherPowerUpActive(std::vector<PowerUp>& powerUps, std::string type);
 GLboolean ShouldSpawn(GLuint chance);
+
 void Menu_Enter();
 void Menu_Exit();
 void Game_Enter();
 void Game_Exit();
 void Win_Enter();
 void Win_Exit();
+
+GLfloat fadeTime = 0.0f;
+GLfloat temp_fadeTime = 0.0f;
+GLfloat soundVol = 0.0f;
+GLfloat temp_soundVol = 0.0f;
+GLfloat soundVolMinus_perSecond = 0.0f;
+void SetVolFade(GLfloat tartgetVol, GLfloat time);
+void UpdateSound(GLfloat dt);
+void SwitchToGameActive(Game* game);
+std::function<void()> sound_callback;
 
 
 Game::Game(GLuint width, GLuint height)
@@ -152,6 +168,7 @@ void Game::Init()
 
 void Game::Update(GLfloat dt)
 {
+	UpdateSound(dt);
 	if (this->State != LastGameState)
 	{
 		switch (LastGameState)
@@ -266,6 +283,7 @@ void Game::ProcessInput(GLfloat dt)
 			if (select_button > 0)
 			{
 				select_button--;
+				SoundEngine->play2D("resources/audio/menu/select_move.mp3");
 			}
 			this->KeysProcessed[GLFW_KEY_UP] = GL_TRUE;
 		}
@@ -273,6 +291,7 @@ void Game::ProcessInput(GLfloat dt)
 		{
 			if (select_button == 0)
 			{
+				SoundEngine->play2D("resources/audio/menu/select_move.mp3");
 				select_button++;
 			}
 			this->KeysProcessed[GLFW_KEY_DOWN] = GL_TRUE;
@@ -281,9 +300,10 @@ void Game::ProcessInput(GLfloat dt)
 		{
 			if (select_button == 0)
 			{
-				this->State = GameState::GAME_ACTIVE;
+				SoundEngine->play2D("resources/audio/menu/decision.mp3");
+				SwitchState(GameState::GAME_ACTIVE);
 			}
-			
+
 			this->KeysProcessed[GLFW_KEY_ENTER] = GL_TRUE;
 		}
 	}
@@ -316,14 +336,28 @@ void Game::Render()
 		if (select_button == 0)
 		{
 			qbPos = glm::vec2(this->Width / 2 - 41, Height / 2);
-			game_start_color = SELECT_COLOR;
-			game_continue_color = UNSELECT_COLOR;
+			game_start_color = SELECTED_COLOR;
+			if (GameSaved)
+			{
+				game_continue_color = UNSELECTED_COLOR;
+			}
+			else
+			{
+				game_continue_color = UNACTIVE_COLOR;
+			}
 		}
 		if (select_button == 1)
 		{
 			qbPos = glm::vec2(this->Width / 2 - 41, Height / 2 + 40);
-			game_start_color = UNSELECT_COLOR;
-			game_continue_color = SELECT_COLOR;
+			game_start_color = UNSELECTED_COLOR;
+			if (GameSaved)
+			{
+				game_continue_color = UNSELECTED_COLOR;
+			}
+			else
+			{
+				game_continue_color = UNACTIVE_COLOR;
+			}
 		}
 		Text->RenderText(
 			"Game Start", this->Width / 2 - 11, Height / 2, 1.0, game_start_color
@@ -539,6 +573,23 @@ void Win_Exit()
 	SoundEngine->stopAllSounds();
 }
 
+void Game::SwitchState(GameState targetState) {
+
+	if (targetState == GameState::GAME_ACTIVE)
+	{
+		if (this->State == GameState::GAME_MENU)
+		{
+			//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+			//this->State = GameState::GAME_ACTIVE;
+			fadeTime = 2.0f;
+			soundVol = 0.0f;
+			sound_callback = std::bind(&SwitchToGameActive, this);
+		}
+	}
+
+}
+
 void Game::SpawnPowerUps(GameObject& block)
 {
 	if (ShouldSpawn(75)) // 1/75µÄ¼¸ÂÊ
@@ -661,4 +712,35 @@ GLboolean isOtherPowerUpActive(std::vector<PowerUp>& powerUps, std::string type)
 				return GL_TRUE;
 	}
 	return GL_FALSE;
+}
+
+
+void UpdateSound(GLfloat dt) {
+	if (fadeTime != 0.0f)
+	{
+		temp_fadeTime = fadeTime;
+		temp_soundVol = SoundEngine->getSoundVolume();
+		soundVolMinus_perSecond = (soundVol - SoundEngine->getSoundVolume()) / fadeTime;
+		//std::cout << "init vol:" << temp_soundVol << " per minus:" << soundVolMinus_perSecond << " " <<dt;
+
+		fadeTime = 0.0f;
+		soundVol = 0.0f;
+	}
+	if ((temp_fadeTime -= dt) < 0.0f)
+	{
+		if (sound_callback != nullptr)
+		{
+			sound_callback();
+		}
+	}
+	else
+	{
+		temp_soundVol += (dt * soundVolMinus_perSecond);
+		SoundEngine->setSoundVolume(temp_soundVol);
+	}
+
+}
+
+void SwitchToGameActive(Game* game) {
+	game->State = GameState::GAME_ACTIVE;
 }
