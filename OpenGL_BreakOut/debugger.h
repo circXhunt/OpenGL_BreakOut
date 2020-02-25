@@ -1,8 +1,8 @@
+#ifndef DEBUGGER_H
+#define DEBUGGER_H
 #include <glad/glad.h>
 #include <string>
 #include <iostream>
-#ifndef DEBUGGER_H
-#define DEBUGGER_H
 
 GLenum glCheckError_(const char* file, int line);
 

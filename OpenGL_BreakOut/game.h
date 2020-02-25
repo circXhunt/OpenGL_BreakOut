@@ -22,13 +22,13 @@ enum class GameState {
 };
 
 // 初始化挡板的大小
-const glm::vec2 PLAYER_SIZE(100, 20);
+constexpr glm::vec2 PLAYER_SIZE(100, 20);
 // 初始化当班的速率
-const GLfloat PLAYER_VELOCITY(500.0f);
+constexpr GLfloat PLAYER_VELOCITY(500.0f);
 // 初始化球的速度
-const glm::vec2 INITIAL_BALL_VELOCITY(100.0f, -350.0f);
+constexpr glm::vec2 INITIAL_BALL_VELOCITY(100.0f, -350.0f);
 // 球的半径
-const GLfloat BALL_RADIUS = 12.5f;
+constexpr GLfloat BALL_RADIUS = 12.5f;
 
 // Game holds all game-related state and functionality.
 // Combines all game-related data into a single class for
@@ -58,6 +58,7 @@ public:
     void DoCollisions();
     void ResetLevel();
     void ResetPlayer();
+    void NextLevel();
     void SpawnPowerUps(GameObject& block);
     void UpdatePowerUps(GLfloat dt);
     void SwitchState(GameState targetState);

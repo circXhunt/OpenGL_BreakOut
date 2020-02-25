@@ -22,6 +22,7 @@
 #include "debugger.h"
 #include "irrKlang/irrKlang.h"
 #include "texture_renderer.h"
+#include "task.h"
 
 using namespace irrklang;
 
@@ -38,10 +39,12 @@ GLfloat ShakeTime = 0.0f;
 GLboolean GameClear = GL_FALSE;
 GLboolean GameSaved = GL_FALSE;
 GameState LastGameState = GameState::GAME_MENU;
+std::vector<Magia::Task> task_list;
+Magia::Task menu_aduio_task, active_audio_task;
 
-glm::vec3 SELECTED_COLOR = glm::vec3(1.0, 1.0, 0.0);
-glm::vec3 UNSELECTED_COLOR = glm::vec3(1.0, 1.0, 1.0);
-glm::vec3 UNACTIVE_COLOR = glm::vec3(0.7f, 0.7f, 0.7f);
+constexpr glm::vec3 SELECTED_COLOR = glm::vec3(1.0, 1.0, 0.0);
+constexpr glm::vec3 UNSELECTED_COLOR = glm::vec3(1.0, 1.0, 1.0);
+constexpr glm::vec3 UNACTIVE_COLOR = glm::vec3(0.7f, 0.7f, 0.7f);
 glm::vec3 game_start_color = SELECTED_COLOR;
 glm::vec3 game_continue_color = UNSELECTED_COLOR;
 GLuint select_button = 0;
@@ -62,7 +65,6 @@ GLfloat temp_fadeTime = 0.0f;
 GLfloat soundVol = 0.0f;
 GLfloat temp_soundVol = 0.0f;
 GLfloat soundVolMinus_perSecond = 0.0f;
-void SetVolFade(GLfloat tartgetVol, GLfloat time);
 void UpdateSound(GLfloat dt);
 void SwitchToGameActive(Game* game);
 std::function<void()> sound_callback;
@@ -164,6 +166,9 @@ void Game::Init()
 
 	// GUI
 	qb = new GameObject(glm::vec2(0.0f), glm::vec2(20, 20), ResourceManager::GetTexture("qb"));
+
+	// task
+	
 }
 
 void Game::Update(GLfloat dt)
@@ -204,10 +209,11 @@ void Game::Update(GLfloat dt)
 	}
 	if (this->State == GameState::GAME_ACTIVE && this->Levels[this->Level].IsCompleted())
 	{
-		this->ResetLevel();
-		this->ResetPlayer();
-		Effects->Chaos = GL_TRUE;
-		this->State = GameState::GAME_WIN;
+		this->NextLevel();
+		//this->ResetLevel();
+		//this->ResetPlayer();
+		//Effects->Chaos = GL_TRUE;
+		//this->State = GameState::GAME_WIN;
 	}
 	if (this->State == GameState::GAME_ACTIVE)
 	{
@@ -274,6 +280,7 @@ void Game::ProcessInput(GLfloat dt)
 					b.Destroyed = GL_TRUE;
 				}
 			}
+			this->KeysProcessed[GLFW_KEY_X] = GL_TRUE;
 		}
 	}
 	if (this->State == GameState::GAME_MENU)
@@ -538,6 +545,20 @@ void Game::ResetPlayer() {
 	Ball->Color = glm::vec3(1.0f);
 }
 
+void Game::NextLevel()
+{	
+	++Level;
+	if (Level < Levels.size())
+	{
+		ResetLevel();
+		ResetPlayer();
+	}
+	else
+	{
+		this->State = GameState::GAME_WIN;
+	}
+}
+
 GLboolean ShouldSpawn(GLuint chance)
 {
 	GLuint random = rand() % chance;
@@ -557,6 +578,9 @@ void Menu_Exit()
 void Game_Enter()
 {
 	SoundEngine->play2D("resources/audio/breakout.mp3", GL_TRUE);
+	fadeTime = 2.0f;
+	soundVol = 1.0f;
+	sound_callback = nullptr;
 }
 
 void Game_Exit()
@@ -713,7 +737,6 @@ GLboolean isOtherPowerUpActive(std::vector<PowerUp>& powerUps, std::string type)
 	}
 	return GL_FALSE;
 }
-
 
 void UpdateSound(GLfloat dt) {
 	if (fadeTime != 0.0f)

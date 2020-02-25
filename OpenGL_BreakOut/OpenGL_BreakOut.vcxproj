@@ -172,7 +172,6 @@
     <ClInclude Include="game.h" />
     <ClInclude Include="game_level.h" />
     <ClInclude Include="game_object.h" />
-    <ClInclude Include="particle.h" />
     <ClInclude Include="particle_generator.h" />
     <ClInclude Include="post_processor.h" />
     <ClInclude Include="power_up.h" />
@@ -180,6 +179,7 @@
     <ClInclude Include="shader.h" />
     <ClInclude Include="sprite_renderer.h" />
     <ClInclude Include="stb_image.h" />
+    <ClInclude Include="task.h" />
     <ClInclude Include="texture.h" />
     <ClInclude Include="texture_renderer.h" />
     <ClInclude Include="triangle_renderer.h" />

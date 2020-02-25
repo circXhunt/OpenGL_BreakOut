@@ -25,6 +25,9 @@
     <Filter Include="Source Files\main">
       <UniqueIdentifier>{5d7740fd-de77-484c-b9b4-6bea51e922bd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\utility\task">
+      <UniqueIdentifier>{4b43eb1a-ce63-4f61-b506-40637d294994}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -116,14 +119,14 @@
     <ClInclude Include="particle_generator.h">
       <Filter>Header Files\utility</Filter>
     </ClInclude>
-    <ClInclude Include="particle.h">
-      <Filter>Header Files\utility</Filter>
-    </ClInclude>
     <ClInclude Include="debugger.h">
       <Filter>Header Files\utility</Filter>
     </ClInclude>
     <ClInclude Include="Collision.h">
       <Filter>Header Files\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="task.h">
+      <Filter>Header Files\utility\task</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
