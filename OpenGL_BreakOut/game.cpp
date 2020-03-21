@@ -42,12 +42,16 @@ GameState LastGameState = GameState::GAME_MENU;
 std::vector<Magia::Task> task_list;
 Magia::Task menu_aduio_task, active_audio_task;
 
+bool GamePause = false;
+
 constexpr glm::vec3 SELECTED_COLOR = glm::vec3(1.0, 1.0, 0.0);
 constexpr glm::vec3 UNSELECTED_COLOR = glm::vec3(1.0, 1.0, 1.0);
 constexpr glm::vec3 UNACTIVE_COLOR = glm::vec3(0.7f, 0.7f, 0.7f);
 glm::vec3 game_start_color = SELECTED_COLOR;
 glm::vec3 game_continue_color = UNSELECTED_COLOR;
 GLuint select_button = 0;
+
+constexpr float BallRotateSpeed = 3.0f;
 
 void ActivatePowerUp(PowerUp& powerUp);
 GLboolean isOtherPowerUpActive(std::vector<PowerUp>& powerUps, std::string type);
@@ -113,7 +117,7 @@ void Game::Init()
 
 	// ¼ÓÔØÎÆÀí
 	ResourceManager::LoadTexture("resources/textures/background.jpg", GL_FALSE, "background");
-	ResourceManager::LoadTexture("resources/textures/awesomeface.png", GL_TRUE, "face");
+	ResourceManager::LoadTexture("resources/textures/qb_ball.png", GL_TRUE, "face");
 	ResourceManager::LoadTexture("resources/textures/block.png", GL_FALSE, "block");
 	ResourceManager::LoadTexture("resources/textures/block_solid.png", GL_FALSE, "block_solid");
 	ResourceManager::LoadTexture("resources/textures/300px-QB.jpg", GL_FALSE, "qb");
@@ -126,6 +130,8 @@ void Game::Init()
 	ResourceManager::LoadTexture("resources/textures/powerup_chaos.png", GL_TRUE, "tex_chaos");
 	ResourceManager::LoadTexture("resources/textures/background/menu.png", GL_TRUE, "menu");
 	ResourceManager::LoadTexture("resources/textures/background/logo.png", GL_TRUE, "logo");
+	ResourceManager::LoadTexture("resources/textures/particle.png", GL_TRUE, "particle");
+
 
 
 	// ¼ÓÔØ¹Ø¿¨
@@ -168,11 +174,15 @@ void Game::Init()
 	qb = new GameObject(glm::vec2(0.0f), glm::vec2(20, 20), ResourceManager::GetTexture("qb"));
 
 	// task
-	
+
 }
 
 void Game::Update(GLfloat dt)
 {
+	if (GamePause)
+	{
+		return;
+	}
 	UpdateSound(dt);
 	if (this->State != LastGameState)
 	{
@@ -218,7 +228,10 @@ void Game::Update(GLfloat dt)
 	if (this->State == GameState::GAME_ACTIVE)
 	{
 		Ball->Move(dt, this->Width);
-
+		if (!Ball->Stuck)
+		{
+			Ball->Rotation += BallRotateSpeed * dt;
+		}
 		DoCollisions();
 
 		Particles->Update(dt, *Ball, 2, glm::vec2(Ball->Radius / 2));
@@ -282,6 +295,12 @@ void Game::ProcessInput(GLfloat dt)
 			}
 			this->KeysProcessed[GLFW_KEY_X] = GL_TRUE;
 		}
+
+		if (this->Keys[GLFW_KEY_P] && !this->KeysProcessed[GLFW_KEY_P])
+		{
+			GamePause = !GamePause;
+			this->KeysProcessed[GLFW_KEY_P] = GL_TRUE;
+		}
 	}
 	if (this->State == GameState::GAME_MENU)
 	{
@@ -328,6 +347,10 @@ void Game::ProcessInput(GLfloat dt)
 
 void Game::Render()
 {
+	//if (GamePause)
+	//{
+	//	return;
+	//}
 	if (this->State == GameState::GAME_MENU)
 	{
 		// »æÖÆ±³¾°
@@ -389,14 +412,12 @@ void Game::Render()
 
 		// »æÖÆ±³¾°
 		Renderer->DrawSprite(this->Levels[this->Level].GetBackground(),
-			glm::vec2(0, 0), glm::vec2(this->Width, this->Height), 0.0f
+			glm::vec2(0, 0), glm::vec2(this->Width, this->Height), 0.0f, glm::vec3(0.3f)
 		);
 
 		// »æÖÆ¹Ø¿¨
 		this->Levels[this->Level].Draw(*Renderer);
 
-		// Draw particles   
-		Particles->Draw();
 
 		// Draw Power up
 		for (PowerUp& powerUp : this->PowerUps)
@@ -409,6 +430,8 @@ void Game::Render()
 		// »æÖÆÇò
 		Ball->Draw(*Renderer);
 
+		// Draw particles   
+		Particles->Draw();
 
 
 		Effects->EndRender();
@@ -546,7 +569,7 @@ void Game::ResetPlayer() {
 }
 
 void Game::NextLevel()
-{	
+{
 	++Level;
 	if (Level < Levels.size())
 	{
@@ -577,7 +600,7 @@ void Menu_Exit()
 
 void Game_Enter()
 {
-	SoundEngine->play2D("resources/audio/breakout.mp3", GL_TRUE);
+	SoundEngine->play2D("resources/audio/La gis sulva za Celow.mp3", GL_TRUE);
 	fadeTime = 2.0f;
 	soundVol = 1.0f;
 	sound_callback = nullptr;
